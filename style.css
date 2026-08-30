@@ -103,13 +103,29 @@ button, select, input {
   flex-direction: column;
   position: relative;
   background-color: var(--bg-app);
+  overflow: hidden;
+}
+
+.app-screen::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-image: linear-gradient(rgba(241, 245, 249, 0.12), rgba(241, 245, 249, 0.12)), url('background.jpg');
   background-size: cover;
   background-position: center;
+  z-index: 0;
+  /* Increase contrast, saturation, and brightness of the culinary background to make it vibrant and energetic */
+  filter: contrast(1.22) saturate(1.42) brightness(1.02);
+  pointer-events: none;
+  transition: filter var(--transition-normal);
 }
 
-[data-theme="dark"] .app-screen {
+[data-theme="dark"] .app-screen::before {
   background-image: linear-gradient(rgba(11, 15, 25, 0.35), rgba(11, 15, 25, 0.35)), url('background.jpg');
+  filter: contrast(1.25) saturate(1.50) brightness(0.95);
 }
 
 /* Header with Glassmorphism blur */
@@ -183,6 +199,8 @@ button, select, input {
   overflow-y: auto;
   padding: 20px;
   padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* Ensure no cutoff behind nav bar */
+  position: relative;
+  z-index: 1;
 }
 
 /* App Bottom Navigation Bar */
@@ -792,7 +810,7 @@ button, select, input {
   right: 0;
   bottom: 0;
   z-index: 1000;
-  background-color: var(--bg-app);
+  background: transparent;
   overflow-y: auto;
   display: flex;
   align-items: center;
