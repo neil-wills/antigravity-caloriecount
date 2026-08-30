@@ -115,8 +115,8 @@
             <label for="input-activity">Activity Level</label>
             <select id="input-activity" required>
               <option value="1.2">Sedentary (Little/no exercise)</option>
-              <option value="1.375" selected>Lightly Active (Light exercise 1-3 days/wk)</option>
-              <option value="1.55">Moderately Active (Moderate exercise 3-5 days/wk)</option>
+              <option value="1.375">Lightly Active (Light exercise 1-3 days/wk)</option>
+              <option value="1.55" selected>Moderately Active (Moderate exercise 3-5 days/wk)</option>
               <option value="1.725">Very Active (Heavy exercise 6-7 days/wk)</option>
             </select>
           </div>
@@ -124,8 +124,8 @@
           <div class="input-group">
             <label for="input-goal">Weight Goal</label>
             <select id="input-goal" required>
-              <option value="lose">Weight Loss (Mild Caloric Deficit)</option>
-              <option value="maintain" selected>Weight Maintenance</option>
+              <option value="lose" selected>Weight Loss (Mild Caloric Deficit)</option>
+              <option value="maintain">Weight Maintenance</option>
               <option value="gain">Muscle Gain / Healthy Weight Gain</option>
             </select>
           </div>
@@ -157,6 +157,10 @@
           <svg viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M19 19H5V8h14m-3-7v2H8V1H6v2H5c-1.11 0-2 .89-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1m-1 11h-5v5h5v-5Z"/></svg>
           <span id="display-date-label">Today</span>
         </button>
+        <!-- Settings Cog Icon Button -->
+        <button id="btn-header-settings" class="header-btn" aria-label="Open Settings">
+          <svg viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.39-1.09-.73-1.71-.99l-.37-2.65A.506.506 0 0 0 14 3h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.62.26-1.19.6-1.71.99l-2.49-1c-.22-.08-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L5.57 11c-.04.34-.07.67-.07 1c0 .33.03.66.07 1l-2.11 1.63c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.39 1.09.73 1.71.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.62-.26 1.19-.6 1.71-.99l2.49 1c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.63Z"/></svg>
+        </button>
         <!-- Theme Toggle Button -->
         <button id="btn-theme-toggle" class="header-btn" aria-label="Toggle dark/light mode">
           <svg id="icon-sun" viewBox="0 0 24 24" class="icon hidden"><path fill="currentColor" d="M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0-7l2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M2 12l3.42 2.39C5.15 13.65 5 12.84 5 12c0-.84.15-1.65.42-2.39L2 12m20 0l-3.42-2.39c.27.74.42 1.55.42 2.39c0 .84-.15 1.65-.42 2.39L22 12m-10 8l-2.39-3.42c.74.27 1.55.42 2.39.42c.84 0 1.65-.15 2.39-.42L12 20M5.64 4.22l3.29 2.5C8.1 7.17 7.17 8.1 6.72 8.93L4.22 5.64m14.14 0l-2.5 3.29c.83.45 1.76 1.38 2.21 2.21l3.29-2.29m-3.29 11.23l2.5-3.29c-.45-.83-1.38-1.76-2.21-2.21l-3.29 3.29m-11.23 0l3.29-2.5c-.45-.83-1.38-1.76-2.21-2.21l-2.5 3.29Z"/></svg>
@@ -173,6 +177,21 @@
       
       <!-- ================= PANEL: DASHBOARD ================= -->
       <section id="panel-dashboard" class="app-panel">
+        <!-- Welcome Tips Card -->
+        <div class="summary-card tips-card hidden" id="dashboard-welcome-tips" style="border-color: rgba(13, 148, 136, 0.4); background-color: rgba(13, 148, 136, 0.03);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+            <h3 style="font-weight: 700; font-size: 1.15rem; color: var(--accent-teal);">🎉 Welcome, <span id="welcome-tip-username">Elizabeth</span>!</h3>
+            <button id="btn-close-tips" style="background: none; border: none; font-size: 1.6rem; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 0 4px;">&times;</button>
+          </div>
+          <p style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-secondary);">Your daily caloric target is set! Here are a few tips to help you get started:</p>
+          <ul class="ios-instructions-list" style="margin-left: 20px; margin-bottom: 12px; list-style-type: decimal; color: var(--text-secondary);">
+            <li>Use the <strong>🌅 Breakfast, ☀️ Lunch, 🌙 Dinner, or 🍎 Snacks</strong> buttons below to log items.</li>
+            <li>Take food photos or scale images for automatic AI portion and calorie calculations.</li>
+            <li>Click the <strong>⚙️ Settings Cog</strong> in the header to adjust your targets or enter your Gemini API Key.</li>
+          </ul>
+          <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Tip: Open this in Safari and tap <strong>"Add to Home Screen"</strong> to use it like a native mobile app!</p>
+        </div>
+
         <!-- Calorie Ring Summary Card -->
         <div class="summary-card calorie-card">
           <div class="circle-chart-container">
@@ -258,9 +277,12 @@
 
       <!-- ================= PANEL: MEALS LOG ================= -->
       <section id="panel-log" class="app-panel hidden">
-        <div class="section-header">
-          <h2>Daily Meals</h2>
-          <span class="subtitle-label">Check or edit detailed logs</span>
+        <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+          <div>
+            <h2>Daily Meals</h2>
+            <span class="subtitle-label">Check or edit detailed logs</span>
+          </div>
+          <button id="btn-clear-day-logs" class="btn btn-danger-outline hidden" style="padding: 6px 12px; font-size: 0.85rem; border-radius: var(--border-radius-sm);">Clear All Today</button>
         </div>
 
         <div class="meals-log-container" id="meals-log-list">

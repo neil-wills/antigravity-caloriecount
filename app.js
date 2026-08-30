@@ -185,6 +185,18 @@ function initOnboarding() {
     }
   });
 
+  // Handle Cancel onboarding buttons
+  document.querySelectorAll('.btn-cancel-onboard').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (confirm('Discard onboarding and start over?')) {
+        localStorage.removeItem('auracal_profile');
+        localStorage.removeItem('auracal_meals');
+        localStorage.removeItem('auracal_water');
+        window.location.reload();
+      }
+    });
+  });
+
   next1.addEventListener('click', () => {
     const name = document.getElementById('input-display-name').value.trim();
     const age = document.getElementById('input-age').value;
@@ -251,7 +263,8 @@ function initOnboarding() {
       name, age, gender, units, 
       weight: weightKg, height: heightCm, 
       rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
-      activity, goal, apiKey: '' 
+      activity, goal, apiKey: '',
+      tipsDismissed: false
     };
 
     const { targetCalories, targetProtein } = calculateNutrientTargets(rawProfile);
@@ -286,6 +299,15 @@ function updateDisplayTitle() {
 // --------------------------------------------------------------------------
 function renderDashboard() {
   if (!state.profile) return;
+
+  // Toggle Welcome Tips Card
+  const tipsCard = document.getElementById('dashboard-welcome-tips');
+  if (state.profile.tipsDismissed) {
+    tipsCard.classList.add('hidden');
+  } else {
+    tipsCard.classList.remove('hidden');
+    document.getElementById('welcome-tip-username').textContent = state.profile.name || 'Elizabeth';
+  }
 
   const dateKey = state.currentDate;
   
@@ -499,6 +521,14 @@ function renderMealsLog() {
     document.getElementById('btn-empty-add').addEventListener('click', () => {
       openComposer('breakfast');
     });
+  }
+
+  // Toggle Clear All Today Button
+  const clearBtn = document.getElementById('btn-clear-day-logs');
+  if (totalItemsCount > 0) {
+    clearBtn.classList.remove('hidden');
+  } else {
+    clearBtn.classList.add('hidden');
   }
 
   // Register edit & delete event listeners
@@ -1489,7 +1519,52 @@ document.addEventListener('DOMContentLoaded', () => {
   // Settings triggers
   document.getElementById('btn-save-settings').addEventListener('click', handleSaveSettings);
   document.getElementById('btn-test-api-key').addEventListener('click', testApiKey);
-  document.getElementById('btn-reset-app').addEventListener('click', handleResetApp);
+  
+  // Clear Profile / Start Over (Renamed Reset App button for clarity)
+  const resetBtn = document.getElementById('btn-reset-app');
+  if (resetBtn) {
+    resetBtn.textContent = 'Reset Profile & Start Over (Cancel)';
+    resetBtn.addEventListener('click', handleResetApp);
+  }
+
+  // Welcome tips close button listener
+  const closeTipsBtn = document.getElementById('btn-close-tips');
+  if (closeTipsBtn) {
+    closeTipsBtn.addEventListener('click', () => {
+      document.getElementById('dashboard-welcome-tips').classList.add('hidden');
+      if (state.profile) {
+        state.profile.tipsDismissed = true;
+        saveState();
+      }
+    });
+  }
+
+  // Settings Header Cog button routing
+  const headerSettingsBtn = document.getElementById('btn-header-settings');
+  if (headerSettingsBtn) {
+    headerSettingsBtn.addEventListener('click', () => {
+      // Navigate to settings tab
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector('.nav-tab[data-tab="settings"]').classList.add('active');
+      document.querySelectorAll('.app-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('panel-settings').classList.remove('hidden');
+      loadSettingsInputs();
+    });
+  }
+
+  // Clear daily logs button listener
+  const clearLogsBtn = document.getElementById('btn-clear-day-logs');
+  if (clearLogsBtn) {
+    clearLogsBtn.addEventListener('click', () => {
+      if (confirm('Delete all logged food entries for this day?')) {
+        const dateKey = state.currentDate;
+        state.meals[dateKey] = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+        saveState();
+        renderMealsLog();
+        renderDashboard();
+      }
+    });
+  }
 
   // PWA Service Worker Registration
   if ('serviceWorker' in navigator) {
