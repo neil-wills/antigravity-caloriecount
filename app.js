@@ -170,15 +170,39 @@ function initOnboarding() {
   const prev2 = document.getElementById('btn-onboard-prev-2');
   const step1 = document.querySelector('.form-step[data-step="1"]');
   const step2 = document.querySelector('.form-step[data-step="2"]');
+  
+  const unitsSelect = document.getElementById('input-units');
+  const imperialInputs = document.getElementById('onboard-imperial-inputs');
+  const metricInputs = document.getElementById('onboard-metric-inputs');
+
+  unitsSelect.addEventListener('change', () => {
+    if (unitsSelect.value === 'imperial') {
+      imperialInputs.classList.remove('hidden');
+      metricInputs.classList.add('hidden');
+    } else {
+      imperialInputs.classList.add('hidden');
+      metricInputs.classList.remove('hidden');
+    }
+  });
 
   next1.addEventListener('click', () => {
-    // Basic Form validation check for step 1
-    const name = document.getElementById('input-display-name').value;
+    const name = document.getElementById('input-display-name').value.trim();
     const age = document.getElementById('input-age').value;
-    const weight = document.getElementById('input-weight').value;
-    const height = document.getElementById('input-height').value;
+    const units = unitsSelect.value;
 
-    if (name && age && weight && height) {
+    let isValid = false;
+    if (units === 'imperial') {
+      const wLbs = document.getElementById('input-weight-lbs').value;
+      const hFt = document.getElementById('input-height-ft').value;
+      const hIn = document.getElementById('input-height-in').value;
+      isValid = (name && age && wLbs && hFt && hIn);
+    } else {
+      const wKg = document.getElementById('input-weight-kg').value;
+      const hCm = document.getElementById('input-height-cm').value;
+      isValid = (name && age && wKg && hCm);
+    }
+
+    if (isValid) {
       step1.classList.remove('active');
       step2.classList.add('active');
     } else {
@@ -197,12 +221,39 @@ function initOnboarding() {
     const name = document.getElementById('input-display-name').value.trim() || "Elizabeth";
     const age = parseInt(document.getElementById('input-age').value);
     const gender = document.querySelector('input[name="gender"]:checked').value;
-    const weight = parseFloat(document.getElementById('input-weight').value);
-    const height = parseFloat(document.getElementById('input-height').value);
     const activity = parseFloat(document.getElementById('input-activity').value);
     const goal = document.getElementById('input-goal').value;
+    const units = unitsSelect.value;
 
-    const rawProfile = { name, age, gender, weight, height, activity, goal, apiKey: '' };
+    let weightKg = 0;
+    let heightCm = 0;
+    let rawWeight = 0;
+    let rawHeightFt = 0;
+    let rawHeightIn = 0;
+    let rawHeightCm = 0;
+
+    if (units === 'imperial') {
+      rawWeight = parseFloat(document.getElementById('input-weight-lbs').value);
+      rawHeightFt = parseInt(document.getElementById('input-height-ft').value);
+      rawHeightIn = parseInt(document.getElementById('input-height-in').value);
+      
+      weightKg = rawWeight * 0.45359237;
+      heightCm = (rawHeightFt * 12 + rawHeightIn) * 2.54;
+    } else {
+      rawWeight = parseFloat(document.getElementById('input-weight-kg').value);
+      rawHeightCm = parseFloat(document.getElementById('input-height-cm').value);
+      
+      weightKg = rawWeight;
+      heightCm = rawHeightCm;
+    }
+
+    const rawProfile = { 
+      name, age, gender, units, 
+      weight: weightKg, height: heightCm, 
+      rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
+      activity, goal, apiKey: '' 
+    };
+
     const { targetCalories, targetProtein } = calculateNutrientTargets(rawProfile);
 
     state.profile = { ...rawProfile, targetCalories, targetProtein };
@@ -217,7 +268,6 @@ function initOnboarding() {
     onboardingScreen.classList.add('hidden');
     mainScreen.classList.remove('hidden');
 
-    // Load Dashboard View
     updateDisplayTitle();
     renderDashboard();
   });
@@ -1126,33 +1176,87 @@ function loadSettingsInputs() {
   if (!state.profile) return;
 
   const prof = state.profile;
+  const units = prof.units || 'imperial';
+
   document.getElementById('settings-app-title').value = prof.name || 'Elizabeth';
-  document.getElementById('settings-weight').value = prof.weight;
+  document.getElementById('settings-units').value = units;
   document.getElementById('settings-age').value = prof.age;
-  document.getElementById('settings-height').value = prof.height;
   document.getElementById('settings-activity').value = prof.activity;
   document.getElementById('settings-goal').value = prof.goal;
   document.getElementById('settings-api-key').value = prof.apiKey || '';
+
+  const weightTitle = document.getElementById('settings-weight-lbl-title');
+  const heightFtIn = document.getElementById('settings-height-row-ftin');
+  const heightCm = document.getElementById('settings-height-row-cm');
+
+  if (units === 'imperial') {
+    weightTitle.textContent = 'Weight (lbs)';
+    heightFtIn.classList.remove('hidden');
+    heightCm.classList.add('hidden');
+
+    document.getElementById('settings-weight').value = prof.rawWeight || Math.round(prof.weight / 0.45359237);
+    document.getElementById('settings-height-ft').value = prof.rawHeightFt || 5;
+    document.getElementById('settings-height-in').value = prof.rawHeightIn || 5;
+  } else {
+    weightTitle.textContent = 'Weight (kg)';
+    heightFtIn.classList.add('hidden');
+    heightCm.classList.remove('hidden');
+
+    document.getElementById('settings-weight').value = prof.rawWeight || prof.weight;
+    document.getElementById('settings-height-cm').value = prof.rawHeightCm || prof.height;
+  }
 
   updateApiKeyStatus(prof.apiKey);
 }
 
 function handleSaveSettings() {
   const name = document.getElementById('settings-app-title').value.trim() || 'Elizabeth';
-  const weight = parseFloat(document.getElementById('settings-weight').value);
   const age = parseInt(document.getElementById('settings-age').value);
-  const height = parseFloat(document.getElementById('settings-height').value);
   const activity = parseFloat(document.getElementById('settings-activity').value);
   const goal = document.getElementById('settings-goal').value;
   const apiKey = document.getElementById('settings-api-key').value.trim();
+  const units = document.getElementById('settings-units').value;
 
-  if (isNaN(weight) || isNaN(age) || isNaN(height)) {
-    alert('Please enter valid numbers for weight, height, and age.');
-    return;
+  let weightKg = 0;
+  let heightCm = 0;
+  let rawWeight = 0;
+  let rawHeightFt = 0;
+  let rawHeightIn = 0;
+  let rawHeightCm = 0;
+
+  if (units === 'imperial') {
+    rawWeight = parseFloat(document.getElementById('settings-weight').value);
+    rawHeightFt = parseInt(document.getElementById('settings-height-ft').value);
+    rawHeightIn = parseInt(document.getElementById('settings-height-in').value);
+
+    if (isNaN(rawWeight) || isNaN(rawHeightFt) || isNaN(rawHeightIn) || isNaN(age)) {
+      alert('Please enter valid numbers for weight, height, and age.');
+      return;
+    }
+
+    weightKg = rawWeight * 0.45359237;
+    heightCm = (rawHeightFt * 12 + rawHeightIn) * 2.54;
+  } else {
+    rawWeight = parseFloat(document.getElementById('settings-weight').value);
+    rawHeightCm = parseFloat(document.getElementById('settings-height-cm').value);
+
+    if (isNaN(rawWeight) || isNaN(rawHeightCm) || isNaN(age)) {
+      alert('Please enter valid numbers for weight, height, and age.');
+      return;
+    }
+
+    weightKg = rawWeight;
+    heightCm = rawHeightCm;
   }
 
-  // Store profile edits & compute targets
-  const updatedProfile = { ...state.profile, name, weight, age, height, activity, goal, apiKey };
+  const updatedProfile = { 
+    ...state.profile, 
+    name, age, units,
+    weight: weightKg, height: heightCm,
+    rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
+    activity, goal, apiKey 
+  };
+
   const { targetCalories, targetProtein } = calculateNutrientTargets(updatedProfile);
 
   state.profile = { ...updatedProfile, targetCalories, targetProtein };
@@ -1342,6 +1446,27 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('manual-food-weight').addEventListener('input', updateManualPreview);
   document.getElementById('manual-food-density').addEventListener('input', updateManualPreview);
   document.getElementById('btn-manual-add-item').addEventListener('click', handleManualAdd);
+
+  // Settings units swap listeners
+  const settingsUnits = document.getElementById('settings-units');
+  if (settingsUnits) {
+    settingsUnits.addEventListener('change', () => {
+      const units = settingsUnits.value;
+      const weightTitle = document.getElementById('settings-weight-lbl-title');
+      const heightFtIn = document.getElementById('settings-height-row-ftin');
+      const heightCm = document.getElementById('settings-height-row-cm');
+
+      if (units === 'imperial') {
+        weightTitle.textContent = 'Weight (lbs)';
+        heightFtIn.classList.remove('hidden');
+        heightCm.classList.add('hidden');
+      } else {
+        weightTitle.textContent = 'Weight (kg)';
+        heightFtIn.classList.add('hidden');
+        heightCm.classList.remove('hidden');
+      }
+    });
+  }
 
   // Scanner triggers
   document.getElementById('btn-action-scan-scale').addEventListener('click', () => openScanner('scale'));

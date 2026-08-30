@@ -53,6 +53,16 @@
               <input type="number" id="input-age" value="50" min="1" max="120" required>
             </div>
             <div class="input-group">
+              <label for="input-units">Units System</label>
+              <select id="input-units">
+                <option value="imperial" selected>Imperial (lbs, ft/in)</option>
+                <option value="metric">Metric (kg, cm)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="input-row">
+            <div class="input-group">
               <label>Gender</label>
               <div class="gender-toggle-container">
                 <label class="gender-btn">
@@ -67,14 +77,30 @@
             </div>
           </div>
 
-          <div class="input-row">
+          <!-- Weight & Height Inputs (Imperial - Visible by Default) -->
+          <div id="onboard-imperial-inputs" class="input-row">
             <div class="input-group">
-              <label for="input-weight">Weight (kg)</label>
-              <input type="number" id="input-weight" value="70" step="0.1" min="20" max="300" required>
+              <label for="input-weight-lbs">Weight (lbs)</label>
+              <input type="number" id="input-weight-lbs" value="220" step="0.1" min="50" max="600">
             </div>
             <div class="input-group">
-              <label for="input-height">Height (cm)</label>
-              <input type="number" id="input-height" value="165" step="1" min="100" max="250" required>
+              <label>Height (ft / in)</label>
+              <div class="height-dual-inputs" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <input type="number" id="input-height-ft" value="5" min="2" max="8" placeholder="ft">
+                <input type="number" id="input-height-in" value="5" min="0" max="11" placeholder="in">
+              </div>
+            </div>
+          </div>
+
+          <!-- Weight & Height Inputs (Metric - Hidden by Default) -->
+          <div id="onboard-metric-inputs" class="input-row hidden">
+            <div class="input-group">
+              <label for="input-weight-kg">Weight (kg)</label>
+              <input type="number" id="input-weight-kg" value="70" step="0.1" min="20" max="300">
+            </div>
+            <div class="input-group">
+              <label for="input-height-cm">Height (cm)</label>
+              <input type="number" id="input-height-cm" value="165" step="1" min="100" max="250">
             </div>
           </div>
           
@@ -296,10 +322,21 @@
 
             <div class="settings-item">
               <div class="settings-label">
-                <strong>Weight (kg)</strong>
+                <strong>Unit System</strong>
+                <span>Calculates BMR limits</span>
+              </div>
+              <select id="settings-units" class="settings-select-small">
+                <option value="imperial" selected>Imperial (lbs, ft/in)</option>
+                <option value="metric">Metric (kg, cm)</option>
+              </select>
+            </div>
+
+            <div class="settings-item" id="settings-weight-row">
+              <div class="settings-label">
+                <strong id="settings-weight-lbl-title">Weight (lbs)</strong>
                 <span>Calculates BMR</span>
               </div>
-              <input type="number" id="settings-weight" class="settings-input-small" step="0.1" value="70">
+              <input type="number" id="settings-weight" class="settings-input-small" step="0.1" value="220">
             </div>
 
             <div class="settings-item">
@@ -310,12 +347,25 @@
               <input type="number" id="settings-age" class="settings-input-small" value="50">
             </div>
 
-            <div class="settings-item">
+            <!-- Height Settings (Imperial View) -->
+            <div class="settings-item" id="settings-height-row-ftin">
+              <div class="settings-label">
+                <strong>Height (ft / in)</strong>
+                <span>Height scale BMR</span>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <input type="number" id="settings-height-ft" class="settings-input-small" style="width: 50px; padding: 6px 4px; text-align: right;" value="5">
+                <input type="number" id="settings-height-in" class="settings-input-small" style="width: 50px; padding: 6px 4px; text-align: right;" value="5">
+              </div>
+            </div>
+
+            <!-- Height Settings (Metric View - Hidden by Default) -->
+            <div class="settings-item hidden" id="settings-height-row-cm">
               <div class="settings-label">
                 <strong>Height (cm)</strong>
                 <span>Height scale BMR</span>
               </div>
-              <input type="number" id="settings-height" class="settings-input-small" value="165">
+              <input type="number" id="settings-height-cm" class="settings-input-small" value="165">
             </div>
 
             <div class="settings-item">
