@@ -432,11 +432,19 @@ function renderMealsLog() {
   listContainer.innerHTML = '';
 
   const dayMeals = state.meals[dateKey] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  
+  const mealSVGs = {
+    breakfast: `<svg class="meal-svg" viewBox="0 0 24 24" style="width: 22px; height: 22px; margin-right: 6px;"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M5 9h10v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4V9Z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M15 11h2a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2h-2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 19h18"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M7 6c0-1.5 1-2 1-2M11 6c0-1.5 1-2 1-2M15 6c0-1.5 1-2 1-2"/></svg>`,
+    lunch: `<svg class="meal-svg" viewBox="0 0 24 24" style="width: 22px; height: 22px; margin-right: 6px;"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M8 8v8"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M16 8v5M14 8v3M18 8v3M14 11h8"/></svg>`,
+    dinner: `<svg class="meal-svg" viewBox="0 0 24 24" style="width: 22px; height: 22px; margin-right: 6px;"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M2 19h20"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 17a8 8 0 0 1 16 0"/><circle cx="12" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="2"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M12 4c.5-1 .5-1.5.5-2"/></svg>`,
+    snacks: `<svg class="meal-svg" viewBox="0 0 24 24" style="width: 22px; height: 22px; margin-right: 6px;"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 17c-2-1-4 .5-6-1.5c-2.5-2.5-1.5-6.5 1-7.5c2.5-1 4 1 5 1s2.5-2 5-1c2.5 1 3.5 5 1 7.5c-2 2-4 .5-6 1.5Z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 8c0-2 1-3 2-3"/><path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" d="M14 5c1 .5 2 1 2 2s-1 1-2 0s-1-2 0-2"/></svg>`
+  };
+
   const mealPeriods = [
-    { id: 'breakfast', name: 'Breakfast', emoji: '🌅' },
-    { id: 'lunch', name: 'Lunch', emoji: '☀️' },
-    { id: 'dinner', name: 'Dinner', emoji: '🌙' },
-    { id: 'snacks', name: 'Snacks', emoji: '🍎' }
+    { id: 'breakfast', name: 'Breakfast', svg: mealSVGs.breakfast },
+    { id: 'lunch', name: 'Lunch', svg: mealSVGs.lunch },
+    { id: 'dinner', name: 'Dinner', svg: mealSVGs.dinner },
+    { id: 'snacks', name: 'Snacks', svg: mealSVGs.snacks }
   ];
 
   let totalItemsCount = 0;
@@ -465,7 +473,7 @@ function renderMealsLog() {
     header.className = 'meal-group-header';
     header.innerHTML = `
       <div class="meal-title-block">
-        <span class="meal-emoji">${period.emoji}</span>
+        <span class="meal-emoji" style="display: flex; align-items: center;">${period.svg}</span>
         <span class="meal-name">${period.name}</span>
       </div>
       <div class="meal-group-totals">

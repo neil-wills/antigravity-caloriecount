@@ -546,6 +546,22 @@ button, select, input {
 
 .shortcut-icon {
   font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+}
+
+.meal-svg {
+  width: 28px;
+  height: 28px;
+  color: var(--accent-teal);
+  transition: transform var(--transition-fast), color var(--transition-fast);
+}
+
+.btn-shortcut:hover .meal-svg {
+  transform: scale(1.12);
+  color: var(--accent-orange);
 }
 
 .btn-shortcut span:last-child {
