@@ -8,14 +8,14 @@
    -------------------------------------------------------------------------- */
 :root {
   /* Light Theme Color Palette */
-  --bg-app: #f8fafc;
+  --bg-app: #f1f5f9;
   --bg-header: rgba(255, 255, 255, 0.85);
-  --bg-card: #ffffff;
-  --bg-card-hover: #f1f5f9;
-  --border-color: rgba(226, 232, 240, 0.8);
+  --bg-card: rgba(255, 255, 255, 0.72);
+  --bg-card-hover: rgba(241, 245, 249, 0.85);
+  --border-color: rgba(226, 232, 240, 0.7);
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-muted: #64748b;
   
   /* Semantic Accent Colors */
   --accent-teal: #0d9488;      /* Primary Brand / Health & Protein */
@@ -42,11 +42,11 @@
 
 /* Dark Theme Overrides */
 [data-theme="dark"] {
-  --bg-app: #090d16;
+  --bg-app: #0b0f19;
   --bg-header: rgba(15, 23, 42, 0.85);
-  --bg-card: #151f32;
-  --bg-card-hover: #1e293b;
-  --border-color: rgba(51, 65, 85, 0.5);
+  --bg-card: rgba(21, 31, 50, 0.75);
+  --bg-card-hover: rgba(30, 41, 59, 0.85);
+  --border-color: rgba(51, 65, 85, 0.4);
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
   --text-muted: #64748b;
@@ -103,6 +103,13 @@ button, select, input {
   flex-direction: column;
   position: relative;
   background-color: var(--bg-app);
+  background-image: linear-gradient(rgba(241, 245, 249, 0.88), rgba(241, 245, 249, 0.88)), url('background.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+[data-theme="dark"] .app-screen {
+  background-image: linear-gradient(rgba(11, 15, 25, 0.91), rgba(11, 15, 25, 0.91)), url('background.jpg');
 }
 
 /* Header with Glassmorphism blur */
@@ -279,6 +286,8 @@ button, select, input {
   padding: 24px;
   margin-bottom: 20px;
   box-shadow: var(--shadow-md);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
 

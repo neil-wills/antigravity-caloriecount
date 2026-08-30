@@ -5,7 +5,8 @@ const ASSETS = [
   './style.css',
   './app.js',
   './manifest.json',
-  './icon.svg'
+  './icon.svg',
+  './background.jpg'
 ];
 
 // Install Event
