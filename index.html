@@ -176,7 +176,7 @@
     <main class="app-main-content">
       
       <!-- ================= PANEL: DASHBOARD ================= -->
-      <section id="panel-dashboard" class="app-panel">
+      <section id="panel-dashboard" class="app-panel hidden">
         <!-- Welcome Tips Card -->
         <div class="summary-card tips-card hidden" id="dashboard-welcome-tips" style="border-color: rgba(13, 148, 136, 0.4); background-color: rgba(13, 148, 136, 0.03);">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
@@ -276,7 +276,7 @@
       </section>
 
       <!-- ================= PANEL: MEALS LOG ================= -->
-      <section id="panel-log" class="app-panel hidden">
+      <section id="panel-log" class="app-panel">
         <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
           <div>
             <h2>Daily Meals</h2>
@@ -447,11 +447,11 @@
 
     <!-- Bottom Tab Navigation Bar -->
     <nav class="app-nav-bar">
-      <button class="nav-tab active" data-tab="dashboard">
+      <button class="nav-tab" data-tab="dashboard">
         <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8h5Z"/></svg>
         <span>Dashboard</span>
       </button>
-      <button class="nav-tab" data-tab="log">
+      <button class="nav-tab active" data-tab="log">
         <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2zm0 8H7v-2h10v2z"/></svg>
         <span>Logs</span>
       </button>
