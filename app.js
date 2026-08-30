@@ -1,0 +1,1377 @@
+/* ==========================================================================
+   AuraCal / Lizzy's Plate - Core Application Script
+   Includes State Store, Mifflin-St Jeor calculations, SVG Graph, PWA setup,
+   and client-side Gemini Multimodal API connection.
+   ========================================================================== */
+
+// --------------------------------------------------------------------------
+// 1. Food Density & Nutrient Database (for Manual Inputs)
+// --------------------------------------------------------------------------
+const FOOD_DATABASE = {
+  "apple": { density: 52, protein: 0.3 },
+  "banana": { density: 89, protein: 1.1 },
+  "avocado": { density: 160, protein: 2.0 },
+  "chicken breast": { density: 165, protein: 31.0 },
+  "salmon": { density: 208, protein: 20.0 },
+  "greek yogurt": { density: 59, protein: 10.0 },
+  "blueberries": { density: 57, protein: 0.7 },
+  "oatmeal": { density: 389, protein: 16.9 },
+  "egg": { density: 155, protein: 13.0 },
+  "white rice": { density: 130, protein: 2.7 },
+  "almonds": { density: 579, protein: 21.0 },
+  "steak": { density: 271, protein: 25.0 },
+  "broccoli": { density: 34, protein: 2.8 },
+  "sweet potato": { density: 86, protein: 1.6 },
+  "milk": { density: 42, protein: 3.4 },
+  "bread": { density: 265, protein: 9.0 }
+};
+
+// Helper: Get density & protein per 100g
+function lookupFood(name) {
+  const cleanName = name.toLowerCase().trim();
+  for (const [key, val] of Object.entries(FOOD_DATABASE)) {
+    if (cleanName.includes(key)) {
+      return val;
+    }
+  }
+  return { density: 150, protein: 5.0 }; // Default fallback values
+}
+
+// --------------------------------------------------------------------------
+// 2. Global State Store & Persistence
+// --------------------------------------------------------------------------
+let state = {
+  profile: null, // { name, age, weight, height, gender, activity, goal, targetCalories, targetProtein, apiKey }
+  meals: {},     // Date key YYYY-MM-DD -> { breakfast: [], lunch: [], dinner: [], snacks: [] }
+  water: {},     // Date key YYYY-MM-DD -> integer (glasses, max 8)
+  currentDate: getTodayDateString(),
+  composerMealType: 'breakfast',
+  composerItems: []
+};
+
+// Utility to get YYYY-MM-DD in local time
+function getTodayDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Load State from LocalStorage
+function loadState() {
+  const savedProfile = localStorage.getItem('auracal_profile');
+  const savedMeals = localStorage.getItem('auracal_meals');
+  const savedWater = localStorage.getItem('auracal_water');
+
+  if (savedProfile) {
+    state.profile = JSON.parse(savedProfile);
+    if (savedMeals) state.meals = JSON.parse(savedMeals);
+    if (savedWater) state.water = JSON.parse(savedWater);
+    return true;
+  }
+  return false;
+}
+
+// Save State to LocalStorage
+function saveState() {
+  if (state.profile) {
+    localStorage.setItem('auracal_profile', JSON.stringify(state.profile));
+    localStorage.setItem('auracal_meals', JSON.stringify(state.meals));
+    localStorage.setItem('auracal_water', JSON.stringify(state.water));
+  }
+}
+
+// Recalculate Mifflin-St Jeor Targets
+// Men: BMR = 10 * weight (kg) + 6.25 * height (cm) - 5 * age (y) + 5
+// Women: BMR = 10 * weight (kg) + 6.25 * height (cm) - 5 * age (y) - 161
+function calculateNutrientTargets(profile) {
+  const weight = parseFloat(profile.weight);
+  const height = parseFloat(profile.height);
+  const age = parseInt(profile.age);
+  const gender = profile.gender;
+  const activity = parseFloat(profile.activity);
+  const goal = profile.goal;
+
+  let bmr = 0;
+  if (gender === 'male') {
+    bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+  } else {
+    bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+  }
+
+  const tdee = bmr * activity;
+  let targetCalories = Math.round(tdee);
+
+  if (goal === 'lose') {
+    targetCalories = Math.round(tdee - 450);
+    // Lower threshold safety rules
+    const minCals = (gender === 'male') ? 1500 : 1200;
+    if (targetCalories < minCals) targetCalories = minCals;
+  } else if (goal === 'gain') {
+    targetCalories = Math.round(tdee + 250);
+  }
+
+  // Elevated protein guidelines for individuals 50+ (approx 1.5g per kg bodyweight)
+  // to protect against sarcopenia (muscle loss) and promote bone density.
+  let targetProtein = Math.round(weight * 1.5);
+  if (targetProtein < 60) targetProtein = 60; // Lower safety baseline
+
+  return { targetCalories, targetProtein };
+}
+
+// --------------------------------------------------------------------------
+// 3. UI State Management and Router
+// --------------------------------------------------------------------------
+function initRouter() {
+  const tabs = document.querySelectorAll('.nav-tab');
+  const panels = document.querySelectorAll('.app-panel');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.getAttribute('data-tab');
+      
+      // Update Tab Navigation Active State
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+
+      // Show Selected Panel, Hide Others
+      panels.forEach(panel => {
+        if (panel.id === `panel-${targetTab}`) {
+          panel.classList.remove('hidden');
+        } else {
+          panel.classList.add('hidden');
+        }
+      });
+
+      // Special Trigger on panel load
+      if (targetTab === 'dashboard') {
+        renderDashboard();
+      } else if (targetTab === 'log') {
+        renderMealsLog();
+      } else if (targetTab === 'history') {
+        renderHistoryChart();
+      } else if (targetTab === 'settings') {
+        loadSettingsInputs();
+      }
+    });
+  });
+}
+
+// --------------------------------------------------------------------------
+// 4. Wizard Setup & Onboarding Flow
+// --------------------------------------------------------------------------
+function initOnboarding() {
+  const onboardingScreen = document.getElementById('screen-onboarding');
+  const mainScreen = document.getElementById('screen-main');
+  const onboardingForm = document.getElementById('form-onboarding');
+
+  const next1 = document.getElementById('btn-onboard-next-1');
+  const prev2 = document.getElementById('btn-onboard-prev-2');
+  const step1 = document.querySelector('.form-step[data-step="1"]');
+  const step2 = document.querySelector('.form-step[data-step="2"]');
+
+  next1.addEventListener('click', () => {
+    // Basic Form validation check for step 1
+    const name = document.getElementById('input-display-name').value;
+    const age = document.getElementById('input-age').value;
+    const weight = document.getElementById('input-weight').value;
+    const height = document.getElementById('input-height').value;
+
+    if (name && age && weight && height) {
+      step1.classList.remove('active');
+      step2.classList.add('active');
+    } else {
+      alert('Please fill out all inputs before moving to the next step.');
+    }
+  });
+
+  prev2.addEventListener('click', () => {
+    step2.classList.remove('active');
+    step1.classList.add('active');
+  });
+
+  onboardingForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById('input-display-name').value.trim() || "Elizabeth";
+    const age = parseInt(document.getElementById('input-age').value);
+    const gender = document.querySelector('input[name="gender"]:checked').value;
+    const weight = parseFloat(document.getElementById('input-weight').value);
+    const height = parseFloat(document.getElementById('input-height').value);
+    const activity = parseFloat(document.getElementById('input-activity').value);
+    const goal = document.getElementById('input-goal').value;
+
+    const rawProfile = { name, age, gender, weight, height, activity, goal, apiKey: '' };
+    const { targetCalories, targetProtein } = calculateNutrientTargets(rawProfile);
+
+    state.profile = { ...rawProfile, targetCalories, targetProtein };
+    
+    // Seed blank structures for today
+    const todayStr = getTodayDateString();
+    state.meals[todayStr] = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+    state.water[todayStr] = 0;
+
+    saveState();
+
+    onboardingScreen.classList.add('hidden');
+    mainScreen.classList.remove('hidden');
+
+    // Load Dashboard View
+    updateDisplayTitle();
+    renderDashboard();
+  });
+}
+
+function updateDisplayTitle() {
+  const displayTitle = document.getElementById('app-title-display');
+  if (state.profile && state.profile.name) {
+    displayTitle.textContent = `${state.profile.name}'s Plate`;
+    document.title = `${state.profile.name}'s Plate - Calorie Tracker`;
+  }
+}
+
+// --------------------------------------------------------------------------
+// 5. Rendering - Dashboard View
+// --------------------------------------------------------------------------
+function renderDashboard() {
+  if (!state.profile) return;
+
+  const dateKey = state.currentDate;
+  
+  // Initialize standard structures if date is missing
+  if (!state.meals[dateKey]) {
+    state.meals[dateKey] = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  }
+  if (state.water[dateKey] === undefined) {
+    state.water[dateKey] = 0;
+  }
+
+  const todayMeals = state.meals[dateKey];
+  const targetCals = state.profile.targetCalories;
+  const targetProt = state.profile.targetProtein;
+
+  // 1. Calculate calorie math sums
+  let eatenCalories = 0;
+  let eatenProtein = 0;
+
+  for (const period of ['breakfast', 'lunch', 'dinner', 'snacks']) {
+    if (todayMeals[period]) {
+      todayMeals[period].forEach(item => {
+        eatenCalories += parseFloat(item.calories || 0);
+        eatenProtein += parseFloat(item.protein || 0);
+      });
+    }
+  }
+
+  eatenCalories = Math.round(eatenCalories);
+  eatenProtein = Math.round(eatenProtein);
+  const remainingCalories = targetCals - eatenCalories;
+
+  // 2. Update text panels
+  document.getElementById('display-target-calories').textContent = targetCals;
+  document.getElementById('display-eaten-calories').textContent = eatenCalories;
+  document.getElementById('display-math-remaining').textContent = remainingCalories;
+  
+  const displayLeft = document.getElementById('display-calories-left');
+  displayLeft.textContent = Math.abs(remainingCalories);
+  
+  const circleLabel = document.querySelector('.calories-left-label');
+  if (remainingCalories >= 0) {
+    circleLabel.textContent = 'kcal left';
+    displayLeft.style.color = '';
+  } else {
+    circleLabel.textContent = 'kcal over';
+    displayLeft.style.color = 'var(--accent-danger)';
+  }
+
+  // 3. Calorie SVG Ring Animation
+  const circleFill = document.getElementById('circle-progress');
+  const circumference = 2 * Math.PI * 50; // Radius = 50, circumference ~314.16
+  const progressRatio = Math.min(eatenCalories / targetCals, 1.0);
+  const offset = circumference - (progressRatio * circumference);
+  circleFill.style.strokeDashoffset = offset;
+
+  // Dynamic progress ring colors depending on percentage
+  if (progressRatio >= 1.0 && remainingCalories < -100) {
+    circleFill.style.stroke = 'var(--accent-danger)';
+  } else if (progressRatio >= 0.85) {
+    circleFill.style.stroke = 'var(--accent-teal)'; // Approaching target is positive
+  } else {
+    circleFill.style.stroke = 'var(--accent-orange)';
+  }
+
+  // 4. Update Protein progress bar
+  document.getElementById('display-protein-text').textContent = `${eatenProtein}g / ${targetProt}g`;
+  const proteinPercent = Math.min((eatenProtein / targetProt) * 100, 100);
+  document.getElementById('bar-protein-fill').style.width = `${proteinPercent}%`;
+
+  // 5. Render water glass hydration tracker
+  renderWaterGlasses();
+
+  // 6. Update Period Header text
+  const isToday = (dateKey === getTodayDateString());
+  document.getElementById('dashboard-meal-period').textContent = isToday ? 'Today' : dateKey;
+}
+
+function renderWaterGlasses() {
+  const dateKey = state.currentDate;
+  const glassCount = state.water[dateKey] || 0;
+  const container = document.getElementById('water-glasses-container');
+  container.innerHTML = '';
+
+  for (let i = 1; i <= 8; i++) {
+    const btn = document.createElement('button');
+    btn.className = `glass-btn ${i <= glassCount ? 'active' : ''}`;
+    btn.innerHTML = '🥛';
+    btn.setAttribute('aria-label', `Water glass ${i}`);
+    
+    btn.addEventListener('click', () => {
+      // Toggle glass count logic
+      if (state.water[dateKey] === i) {
+        state.water[dateKey] = i - 1;
+      } else {
+        state.water[dateKey] = i;
+      }
+      saveState();
+      renderWaterGlasses();
+      document.getElementById('display-water-val').textContent = `${state.water[dateKey]} / 8 glasses`;
+    });
+    container.appendChild(btn);
+  }
+
+  document.getElementById('display-water-val').textContent = `${glassCount} / 8 glasses`;
+}
+
+// --------------------------------------------------------------------------
+// 6. Rendering - Meals Log Panel View
+// --------------------------------------------------------------------------
+function renderMealsLog() {
+  const dateKey = state.currentDate;
+  const listContainer = document.getElementById('meals-log-list');
+  listContainer.innerHTML = '';
+
+  const dayMeals = state.meals[dateKey] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  const mealPeriods = [
+    { id: 'breakfast', name: 'Breakfast', emoji: '🌅' },
+    { id: 'lunch', name: 'Lunch', emoji: '☀️' },
+    { id: 'dinner', name: 'Dinner', emoji: '🌙' },
+    { id: 'snacks', name: 'Snacks', emoji: '🍎' }
+  ];
+
+  let totalItemsCount = 0;
+
+  mealPeriods.forEach(period => {
+    const items = dayMeals[period.id] || [];
+    totalItemsCount += items.length;
+
+    // Sum totals for this group
+    let periodCalories = 0;
+    let periodProtein = 0;
+    items.forEach(it => {
+      periodCalories += parseFloat(it.calories || 0);
+      periodProtein += parseFloat(it.protein || 0);
+    });
+    periodCalories = Math.round(periodCalories);
+    periodProtein = Math.round(periodProtein);
+
+    // Create group element card
+    const card = document.createElement('div');
+    card.className = `meal-group-card ${items.length > 0 ? 'expanded' : ''}`;
+    card.id = `meal-group-${period.id}`;
+
+    // Header element
+    const header = document.createElement('div');
+    header.className = 'meal-group-header';
+    header.innerHTML = `
+      <div class="meal-title-block">
+        <span class="meal-emoji">${period.emoji}</span>
+        <span class="meal-name">${period.name}</span>
+      </div>
+      <div class="meal-group-totals">
+        <span class="meal-total-kcal">${periodCalories} kcal</span>
+        <span class="meal-total-prot">${periodProtein}g protein</span>
+        <svg viewBox="0 0 24 24" class="chevron-icon"><path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6l1.41-1.42Z"/></svg>
+      </div>
+    `;
+
+    // Items list detail drawer
+    const listDiv = document.createElement('div');
+    listDiv.className = `meal-items-detail-list ${items.length > 0 ? '' : 'hidden'}`;
+
+    if (items.length === 0) {
+      listDiv.innerHTML = `<p class="empty-list-placeholder">No items logged yet.</p>`;
+    } else {
+      items.forEach((item, index) => {
+        const itemRow = document.createElement('div');
+        itemRow.className = 'log-item-row';
+        itemRow.innerHTML = `
+          <div class="log-item-info">
+            <span class="log-item-title">${item.name}</span>
+            <span class="log-item-subtitle">${item.weightGrams}g ${item.protein ? `| ${item.protein}g protein` : ''}</span>
+          </div>
+          <div class="log-item-values">
+            <span class="log-item-calories">${Math.round(item.calories)} kcal</span>
+            <div class="log-item-actions">
+              <button class="btn-item-action edit-btn" data-meal="${period.id}" data-index="${index}" aria-label="Edit food item">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83l3.75 3.75l1.83-1.83z"/></svg>
+              </button>
+              <button class="btn-item-action delete-btn" data-meal="${period.id}" data-index="${index}" aria-label="Delete food item">
+                <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+        listDiv.appendChild(itemRow);
+      });
+    }
+
+    // Toggle expand/collapse drawer event
+    header.addEventListener('click', () => {
+      card.classList.toggle('expanded');
+      listDiv.classList.toggle('hidden');
+    });
+
+    card.appendChild(header);
+    card.appendChild(listDiv);
+    listContainer.appendChild(card);
+  });
+
+  // Render list fallback if no meals at all
+  if (totalItemsCount === 0) {
+    listContainer.innerHTML = `
+      <div class="no-meals-log">
+        <p style="font-size: 1.8rem; margin-bottom: 8px;">🍽️</p>
+        <p>No food logged for today yet.</p>
+        <button id="btn-empty-add" class="btn btn-secondary-outline" style="margin-top: 15px; width: auto; display: inline-block;">Log Your First Meal</button>
+      </div>
+    `;
+    document.getElementById('btn-empty-add').addEventListener('click', () => {
+      openComposer('breakfast');
+    });
+  }
+
+  // Register edit & delete event listeners
+  listContainer.querySelectorAll('.edit-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const meal = btn.getAttribute('data-meal');
+      const idx = parseInt(btn.getAttribute('data-index'));
+      openEditModal(meal, idx);
+    });
+  });
+
+  listContainer.querySelectorAll('.delete-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const meal = btn.getAttribute('data-meal');
+      const idx = parseInt(btn.getAttribute('data-index'));
+      if (confirm('Delete this food item?')) {
+        deleteFoodItem(meal, idx);
+      }
+    });
+  });
+}
+
+// --------------------------------------------------------------------------
+// 7. Modals: Edit Item Logic
+// --------------------------------------------------------------------------
+function openEditModal(mealType, itemIndex) {
+  const dateKey = state.currentDate;
+  const item = state.meals[dateKey][mealType][itemIndex];
+
+  document.getElementById('edit-meal-type').value = mealType;
+  document.getElementById('edit-item-index').value = itemIndex;
+  document.getElementById('edit-meal-date').value = dateKey;
+
+  document.getElementById('edit-food-name').value = item.name;
+  document.getElementById('edit-food-weight').value = item.weightGrams;
+  document.getElementById('edit-food-calories').value = Math.round(item.calories);
+  document.getElementById('edit-food-protein').value = item.protein || 0;
+
+  document.getElementById('modal-edit-item').classList.remove('hidden');
+}
+
+function closeEditModal() {
+  document.getElementById('modal-edit-item').classList.add('hidden');
+}
+
+function saveEditItem(e) {
+  e.preventDefault();
+  const mealType = document.getElementById('edit-meal-type').value;
+  const index = parseInt(document.getElementById('edit-item-index').value);
+  const dateKey = document.getElementById('edit-meal-date').value;
+
+  const item = state.meals[dateKey][mealType][index];
+  item.name = document.getElementById('edit-food-name').value.trim();
+  item.weightGrams = parseFloat(document.getElementById('edit-food-weight').value);
+  item.calories = parseFloat(document.getElementById('edit-food-calories').value);
+  item.protein = parseFloat(document.getElementById('edit-food-protein').value);
+
+  saveState();
+  closeEditModal();
+  renderMealsLog();
+  renderDashboard();
+}
+
+function deleteFoodItem(mealType, index) {
+  const dateKey = state.currentDate;
+  state.meals[dateKey][mealType].splice(index, 1);
+  saveState();
+  renderMealsLog();
+  renderDashboard();
+}
+
+// --------------------------------------------------------------------------
+// 8. Modals: Meal Composer Logic
+// --------------------------------------------------------------------------
+function openComposer(mealType) {
+  state.composerMealType = mealType;
+  state.composerItems = [];
+  
+  document.getElementById('composer-meal-type').textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+  
+  // Clear Manual form inputs
+  document.getElementById('manual-food-name').value = '';
+  document.getElementById('manual-food-weight').value = '';
+  document.getElementById('manual-food-density').value = '150';
+  document.getElementById('calc-preview-calories').textContent = '0';
+  document.getElementById('calc-preview-protein').textContent = '0.0';
+
+  renderComposerItems();
+  document.getElementById('modal-composer').classList.remove('hidden');
+}
+
+function closeComposer() {
+  document.getElementById('modal-composer').classList.add('hidden');
+}
+
+function renderComposerItems() {
+  const list = document.getElementById('composer-items-list');
+  list.innerHTML = '';
+
+  if (state.composerItems.length === 0) {
+    list.innerHTML = `<p class="empty-list-placeholder">No items added to this meal yet. Use scanner or manual tools below.</p>`;
+  } else {
+    state.composerItems.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.className = 'log-item-row';
+      row.style.borderBottom = '1px solid var(--border-color)';
+      row.style.padding = '6px 0';
+      row.innerHTML = `
+        <div class="log-item-info">
+          <span class="log-item-title">${item.name}</span>
+          <span class="log-item-subtitle">${item.weightGrams}g</span>
+        </div>
+        <div class="log-item-values">
+          <span class="log-item-calories">${Math.round(item.calories)} kcal</span>
+          <button class="btn-item-action delete-btn composer-item-del" data-index="${index}" aria-label="Remove item">
+            <svg viewBox="0 0 24 24" style="width: 14px; height: 14px;"><path fill="currentColor" d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z"/></svg>
+          </button>
+        </div>
+      `;
+      list.appendChild(row);
+    });
+
+    list.querySelectorAll('.composer-item-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-index'));
+        state.composerItems.splice(idx, 1);
+        renderComposerItems();
+      });
+    });
+  }
+
+  // Recalculate totals
+  let mealCals = 0;
+  let mealProt = 0;
+  state.composerItems.forEach(it => {
+    mealCals += it.calories;
+    mealProt += it.protein;
+  });
+
+  document.getElementById('composer-total-calories').textContent = Math.round(mealCals);
+  document.getElementById('composer-total-protein').textContent = Math.round(mealProt);
+}
+
+// Live Calculations on manual input form
+function updateManualPreview() {
+  const name = document.getElementById('manual-food-name').value;
+  const weight = parseFloat(document.getElementById('manual-food-weight').value) || 0;
+  let density = parseFloat(document.getElementById('manual-food-density').value) || 0;
+
+  // Auto Density check on input name change
+  if (name && document.activeElement === document.getElementById('manual-food-name')) {
+    const lookup = lookupFood(name);
+    density = lookup.density;
+    document.getElementById('manual-food-density').value = density;
+  }
+
+  const cals = weight * (density / 100);
+  
+  // Estimate protein
+  const lookup = lookupFood(name);
+  const prot = weight * (lookup.protein / 100);
+
+  document.getElementById('calc-preview-calories').textContent = Math.round(cals);
+  document.getElementById('calc-preview-protein').textContent = prot.toFixed(1);
+}
+
+function handleManualAdd() {
+  const nameInput = document.getElementById('manual-food-name');
+  const weightInput = document.getElementById('manual-food-weight');
+  const densityInput = document.getElementById('manual-food-density');
+
+  const name = nameInput.value.trim();
+  const weight = parseFloat(weightInput.value);
+  const density = parseFloat(densityInput.value);
+
+  if (!name || isNaN(weight) || isNaN(density)) {
+    alert('Please enter a valid food name, weight, and caloric density.');
+    return;
+  }
+
+  const calories = weight * (density / 100);
+  const lookup = lookupFood(name);
+  const protein = parseFloat((weight * (lookup.protein / 100)).toFixed(1));
+
+  state.composerItems.push({ name, weightGrams: weight, calories, protein });
+
+  // Clear inputs
+  nameInput.value = '';
+  weightInput.value = '';
+  densityInput.value = '150';
+  document.getElementById('calc-preview-calories').textContent = '0';
+  document.getElementById('calc-preview-protein').textContent = '0.0';
+
+  renderComposerItems();
+}
+
+function handleSaveMeal() {
+  if (state.composerItems.length === 0) {
+    alert('Please add at least one item before saving the meal.');
+    return;
+  }
+
+  const dateKey = state.currentDate;
+  const mealPeriod = state.composerMealType;
+
+  if (!state.meals[dateKey]) {
+    state.meals[dateKey] = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  }
+
+  state.composerItems.forEach(item => {
+    state.meals[dateKey][mealPeriod].push(item);
+  });
+
+  saveState();
+  closeComposer();
+
+  // If in logs tab, update lists; otherwise update dashboard
+  const activeTab = document.querySelector('.nav-tab.active').getAttribute('data-tab');
+  if (activeTab === 'log') {
+    renderMealsLog();
+  } else {
+    renderDashboard();
+  }
+}
+
+// --------------------------------------------------------------------------
+// 9. Vision AI Scanner Modal & Multimodal Client
+// --------------------------------------------------------------------------
+let scannerMode = 'food'; // 'food' or 'scale'
+
+function openScanner(mode) {
+  scannerMode = mode;
+  const title = document.getElementById('scanner-modal-title');
+  title.textContent = mode === 'scale' ? 'Scan Scale + Food' : 'Scan Food Only';
+
+  // Toggle bounding target box display depending on scale mode
+  const scaleBox = document.getElementById('scale-target-box');
+  if (mode === 'scale') {
+    scaleBox.classList.remove('hidden');
+  } else {
+    scaleBox.classList.add('hidden');
+  }
+
+  // Switch scanner state back to file selection
+  setScannerState('select');
+  document.getElementById('camera-file-input').value = ''; // Reset
+  document.getElementById('modal-scanner').classList.remove('hidden');
+}
+
+function closeScanner() {
+  document.getElementById('modal-scanner').classList.add('hidden');
+}
+
+function setScannerState(stateName) {
+  document.getElementById('scanner-state-select').classList.add('hidden');
+  document.getElementById('scanner-state-scanning').classList.add('hidden');
+  document.getElementById('scanner-state-results').classList.add('hidden');
+  document.getElementById('btn-scanner-add').classList.add('hidden');
+
+  if (stateName === 'select') {
+    document.getElementById('scanner-state-select').classList.remove('hidden');
+  } else if (stateName === 'scanning') {
+    document.getElementById('scanner-state-scanning').classList.remove('hidden');
+  } else if (stateName === 'results') {
+    document.getElementById('scanner-state-results').classList.remove('hidden');
+    document.getElementById('btn-scanner-add').classList.remove('hidden');
+  }
+}
+
+// Handler for Image Capture
+function handleImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Render Image Preview
+  const reader = new FileReader();
+  reader.onload = function(event) {
+    const dataUrl = event.target.result;
+    document.getElementById('scanner-image-preview').src = dataUrl;
+    
+    // Set Scanning UI
+    setScannerState('scanning');
+    
+    // Base64 extract (removing metadata headers)
+    const base64Data = dataUrl.split(',')[1];
+    const mimeType = file.type;
+
+    processVisionAnalysis(base64Data, mimeType);
+  };
+  reader.readAsDataURL(file);
+}
+
+// Routing: Gemini API vs Mock Estimation
+function processVisionAnalysis(base64Data, mimeType) {
+  const apiKey = state.profile ? state.profile.apiKey : '';
+
+  if (apiKey && apiKey.trim() !== '') {
+    callGeminiVisionAPI(base64Data, mimeType, apiKey);
+  } else {
+    runMockScanningAnimation();
+  }
+}
+
+// Genuine API Fetch Client
+async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
+  const prompt = scannerMode === 'scale' 
+    ? `Analyze this food scale image. Read the weight display value in grams (this is critical!). Identify the food on the scale. Calculate the calories and protein content based on this weight. Format the response strictly as JSON with this structure: { "name": "Food Name", "weightGrams": 250, "calories": 350, "proteinGrams": 28.5, "scaleWeightDetected": true, "confidence": "high" }. Do not add any markdown markup besides the JSON object.`
+    : `Identify the food items on the plate. Estimate the portions in grams, total calories, and protein (g). Format the response strictly as JSON with this structure: { "name": "Food Name", "weightGrams": 150, "calories": 250, "proteinGrams": 8.0, "scaleWeightDetected": false, "confidence": "medium" }. Do not add any markdown markup besides the JSON object.`;
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  
+  const payload = {
+    contents: [
+      {
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              mimeType: mimeType,
+              data: base64Data
+            }
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      responseMimeType: "application/json"
+    }
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const textResult = data.candidates[0].content.parts[0].text;
+    const parsedData = JSON.parse(textResult);
+    
+    displayScanResults(parsedData);
+  } catch (error) {
+    console.error('Vision API processing failed:', error);
+    alert('Gemini API call failed. Running mock fallback simulation. Please verify your API Key in Settings.');
+    runMockScanningAnimation(); // Fallback to mock
+  }
+}
+
+// Mock Scanning Simulation with sequential visual text updates
+function runMockScanningAnimation(templateData = null) {
+  const statusMsg = document.getElementById('scanner-status-msg');
+  
+  const steps = [
+    { text: "Reading visual display layers...", delay: 600 },
+    { text: scannerMode === 'scale' ? "Locating scale numbers..." : "Detecting food edges...", delay: 1200 },
+    { text: "Querying nutritional density maps...", delay: 1800 },
+    { text: "Confirming calculations...", delay: 2400 }
+  ];
+
+  steps.forEach(step => {
+    setTimeout(() => {
+      statusMsg.textContent = step.text;
+    }, step.delay);
+  });
+
+  setTimeout(() => {
+    // Generate results after completion of step delay
+    let mockResult = {};
+
+    if (templateData) {
+      // If template trigger
+      mockResult = templateData;
+    } else {
+      // If general capture
+      if (scannerMode === 'scale') {
+        mockResult = {
+          name: "Grilled Chicken Breast",
+          weightGrams: 185,
+          calories: Math.round(185 * 1.65), // 165 kcal / 100g
+          proteinGrams: parseFloat((185 * 0.31).toFixed(1)),
+          scaleWeightDetected: true
+        };
+      } else {
+        mockResult = {
+          name: "Greek Yogurt Salad Bowl",
+          weightGrams: 220,
+          calories: 290,
+          proteinGrams: 14.5,
+          scaleWeightDetected: false
+        };
+      }
+    }
+
+    displayScanResults(mockResult);
+  }, 2600);
+}
+
+// Display Scanner Results Review Screen
+function displayScanResults(result) {
+  setScannerState('results');
+
+  const badge = document.getElementById('result-badge-type');
+  badge.textContent = result.scaleWeightDetected ? 'Scale Weight Applied' : 'AI Portion Estimate';
+  badge.style.backgroundColor = result.scaleWeightDetected ? 'var(--accent-teal)' : 'var(--accent-orange)';
+
+  document.getElementById('result-item-name').textContent = result.name;
+  document.getElementById('result-weight').textContent = `${result.weightGrams} g`;
+  document.getElementById('result-calories').textContent = `${Math.round(result.calories)} kcal`;
+  
+  const protein = result.proteinGrams !== undefined ? result.proteinGrams : result.protein;
+  document.getElementById('result-protein').textContent = `${protein} g`;
+
+  // Scale Read warnings
+  const warningBox = document.getElementById('scale-warning-box');
+  if (scannerMode === 'scale' && !result.scaleWeightDetected) {
+    warningBox.classList.remove('hidden');
+  } else {
+    warningBox.classList.add('hidden');
+  }
+
+  // Autofill adjustment inputs
+  document.getElementById('result-input-name').value = result.name;
+  document.getElementById('result-input-weight').value = result.weightGrams;
+  document.getElementById('result-input-calories').value = Math.round(result.calories);
+  document.getElementById('result-input-protein').value = protein;
+}
+
+function handleAddScannerResult() {
+  const name = document.getElementById('result-input-name').value.trim();
+  const weight = parseFloat(document.getElementById('result-input-weight').value);
+  const calories = parseFloat(document.getElementById('result-input-calories').value);
+  const protein = parseFloat(document.getElementById('result-input-protein').value) || 0;
+
+  if (!name || isNaN(weight) || isNaN(calories)) {
+    alert('Please enter valid item details.');
+    return;
+  }
+
+  state.composerItems.push({ name, weightGrams: weight, calories, protein });
+  renderComposerItems();
+  closeScanner();
+}
+
+// Onboard templates logic
+function initScannerTemplates() {
+  const container = document.getElementById('mock-templates-container');
+  container.querySelectorAll('.btn-mock-template').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-type');
+      
+      let templateData = {};
+      if (type === 'food') {
+        templateData = {
+          name: btn.getAttribute('data-name'),
+          weightGrams: parseFloat(btn.getAttribute('data-weight')),
+          calories: parseFloat(btn.getAttribute('data-calories')),
+          proteinGrams: parseFloat(btn.getAttribute('data-protein')),
+          scaleWeightDetected: false
+        };
+      } else {
+        const weight = parseFloat(btn.getAttribute('data-scale'));
+        const cal100 = parseFloat(btn.getAttribute('data-cal100'));
+        const prot100 = parseFloat(btn.getAttribute('data-protein100'));
+        templateData = {
+          name: btn.getAttribute('data-name'),
+          weightGrams: weight,
+          calories: Math.round(weight * (cal100 / 100)),
+          proteinGrams: parseFloat((weight * (prot100 / 100)).toFixed(1)),
+          scaleWeightDetected: true
+        };
+      }
+
+      setScannerState('scanning');
+      document.getElementById('scanner-image-preview').src = 'icon.svg'; // Placeholder icon preview
+      runMockScanningAnimation(templateData);
+    });
+  });
+}
+
+// --------------------------------------------------------------------------
+// 10. History SVG Chart Drawing
+// --------------------------------------------------------------------------
+function renderHistoryChart() {
+  const container = document.getElementById('history-chart-container');
+  container.innerHTML = '';
+
+  const targetCalories = state.profile ? state.profile.targetCalories : 1800;
+
+  // Retrieve last 7 days keys
+  const dateLabels = [];
+  const intakeData = [];
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const key = `${year}-${month}-${day}`;
+
+    // Label format: "Mon 29"
+    const label = d.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric' });
+    dateLabels.push({ key, label });
+
+    // Compute Intake
+    let dayCals = 0;
+    if (state.meals[key]) {
+      for (const period of ['breakfast', 'lunch', 'dinner', 'snacks']) {
+        state.meals[key][period].forEach(item => {
+          dayCals += parseFloat(item.calories || 0);
+        });
+      }
+    }
+    intakeData.push(Math.round(dayCals));
+  }
+
+  // Stats calculation
+  let sumCals = 0;
+  let adherenceCount = 0;
+  let loggedDaysCount = 0;
+
+  intakeData.forEach((val, i) => {
+    if (val > 0) {
+      sumCals += val;
+      loggedDaysCount++;
+      // Adherence rate: daily calories are within range (+/- 100 kcal of target, or lower)
+      if (val <= targetCalories + 100) {
+        adherenceCount++;
+      }
+    }
+  });
+
+  const avgCalories = loggedDaysCount > 0 ? Math.round(sumCals / loggedDaysCount) : 0;
+  const adherenceRate = loggedDaysCount > 0 ? Math.round((adherenceCount / loggedDaysCount) * 100) : 0;
+
+  document.getElementById('stat-avg-calories').textContent = loggedDaysCount > 0 ? `${avgCalories} kcal` : '---';
+  document.getElementById('stat-adherence-rate').textContent = loggedDaysCount > 0 ? `${adherenceRate}%` : '---';
+
+  // SVG Dimension setups
+  const width = container.clientWidth || 340;
+  const height = 200;
+  const paddingX = 40;
+  const paddingY = 30;
+
+  // Max Calorie ceiling helper
+  const maxIntake = Math.max(...intakeData, targetCalories);
+  const yCeiling = Math.ceil((maxIntake + 200) / 500) * 500; // Round up to nearest 500
+
+  // Coordinate scales
+  const getX = (index) => paddingX + (index * (width - 2 * paddingX) / 6);
+  const getY = (value) => height - paddingY - (value * (height - 2 * paddingY) / yCeiling);
+
+  // Build SVG Object
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '100%');
+  svg.setAttribute('height', '100%');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  // 1. Horizontal Grid lines & Y Axis Labels
+  const gridTicks = [0, yCeiling / 2, yCeiling];
+  gridTicks.forEach(tick => {
+    const yVal = getY(tick);
+    
+    // Grid line
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', paddingX);
+    line.setAttribute('y1', yVal);
+    line.setAttribute('x2', width - paddingX);
+    line.setAttribute('y2', yVal);
+    line.setAttribute('class', 'chart-grid-line');
+    svg.appendChild(line);
+
+    // Grid Label text
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', paddingX - 8);
+    txt.setAttribute('y', yVal + 3);
+    txt.setAttribute('text-anchor', 'end');
+    txt.setAttribute('class', 'chart-axis-text');
+    txt.textContent = tick;
+    svg.appendChild(txt);
+  });
+
+  // 2. Horizontal Target Line
+  const yTarget = getY(targetCalories);
+  const targetLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  targetLine.setAttribute('x1', paddingX);
+  targetLine.setAttribute('y1', yTarget);
+  targetLine.setAttribute('x2', width - paddingX);
+  targetLine.setAttribute('y2', yTarget);
+  targetLine.setAttribute('class', 'chart-target-line');
+  svg.appendChild(targetLine);
+
+  // Target Label text
+  const targetTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  targetTxt.setAttribute('x', width - paddingX);
+  targetTxt.setAttribute('y', yTarget - 6);
+  targetTxt.setAttribute('text-anchor', 'end');
+  targetTxt.setAttribute('class', 'chart-axis-text');
+  targetTxt.setAttribute('fill', 'var(--accent-teal)');
+  targetTxt.textContent = `Target: ${targetCalories}`;
+  svg.appendChild(targetTxt);
+
+  // 3. Draw Actual Intake Line and Shading Area
+  let areaPoints = `M ${getX(0)} ${height - paddingY}`;
+  let linePoints = '';
+
+  intakeData.forEach((val, i) => {
+    const x = getX(i);
+    const y = getY(val);
+    if (i === 0) {
+      linePoints += `M ${x} ${y}`;
+    } else {
+      linePoints += ` L ${x} ${y}`;
+    }
+    areaPoints += ` L ${x} ${y}`;
+  });
+  areaPoints += ` L ${getX(6)} ${height - paddingY} Z`;
+
+  // Draw Area fill
+  const areaPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  areaPath.setAttribute('d', areaPoints);
+  areaPath.setAttribute('class', 'chart-intake-area');
+  svg.appendChild(areaPath);
+
+  // Draw Line
+  const linePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  linePath.setAttribute('d', linePoints);
+  linePath.setAttribute('class', 'chart-intake-line');
+  svg.appendChild(linePath);
+
+  // 4. Draw coordinate Dots and X Labels
+  intakeData.forEach((val, i) => {
+    const x = getX(i);
+    const y = getY(val);
+
+    // Coordinate dot
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+    dot.setAttribute('r', '5');
+    dot.setAttribute('class', 'chart-dot');
+    
+    // Add tooltip text
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.textContent = `${dateLabels[i].label}: ${val} kcal`;
+    dot.appendChild(title);
+    svg.appendChild(dot);
+
+    // X axis label text
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', x);
+    txt.setAttribute('y', height - paddingY + 18);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('class', 'chart-axis-text');
+    txt.textContent = dateLabels[i].label.split(' ')[0]; // Day abbreviation
+    svg.appendChild(txt);
+  });
+
+  container.appendChild(svg);
+}
+
+// --------------------------------------------------------------------------
+// 11. Profile Settings Panel Logic
+// --------------------------------------------------------------------------
+function loadSettingsInputs() {
+  if (!state.profile) return;
+
+  const prof = state.profile;
+  document.getElementById('settings-app-title').value = prof.name || 'Elizabeth';
+  document.getElementById('settings-weight').value = prof.weight;
+  document.getElementById('settings-age').value = prof.age;
+  document.getElementById('settings-height').value = prof.height;
+  document.getElementById('settings-activity').value = prof.activity;
+  document.getElementById('settings-goal').value = prof.goal;
+  document.getElementById('settings-api-key').value = prof.apiKey || '';
+
+  updateApiKeyStatus(prof.apiKey);
+}
+
+function handleSaveSettings() {
+  const name = document.getElementById('settings-app-title').value.trim() || 'Elizabeth';
+  const weight = parseFloat(document.getElementById('settings-weight').value);
+  const age = parseInt(document.getElementById('settings-age').value);
+  const height = parseFloat(document.getElementById('settings-height').value);
+  const activity = parseFloat(document.getElementById('settings-activity').value);
+  const goal = document.getElementById('settings-goal').value;
+  const apiKey = document.getElementById('settings-api-key').value.trim();
+
+  if (isNaN(weight) || isNaN(age) || isNaN(height)) {
+    alert('Please enter valid numbers for weight, height, and age.');
+    return;
+  }
+
+  // Store profile edits & compute targets
+  const updatedProfile = { ...state.profile, name, weight, age, height, activity, goal, apiKey };
+  const { targetCalories, targetProtein } = calculateNutrientTargets(updatedProfile);
+
+  state.profile = { ...updatedProfile, targetCalories, targetProtein };
+  saveState();
+  updateDisplayTitle();
+  updateApiKeyStatus(apiKey);
+
+  alert('Settings saved and calorie targets successfully updated!');
+}
+
+function updateApiKeyStatus(key) {
+  const status = document.getElementById('api-key-status');
+  if (key && key.trim() !== '') {
+    status.textContent = 'Status: Active (Gemini Vision AI Engine Engaged)';
+    status.style.color = '#16a34a'; // Green
+  } else {
+    status.textContent = 'Status: Running in Mock Demonstration Mode';
+    status.style.color = ''; // Default grey
+  }
+}
+
+async function testApiKey() {
+  const key = document.getElementById('settings-api-key').value.trim();
+  if (!key) {
+    alert('Please enter an API Key to test.');
+    return;
+  }
+
+  const status = document.getElementById('api-key-status');
+  status.textContent = 'Testing connection...';
+  
+  // Call small test query to verify API key validity
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: "Hello" }] }] })
+    });
+
+    if (response.ok) {
+      alert('Connection Successful! Your Gemini API key is valid.');
+      status.textContent = 'Status: Active (Gemini Vision AI Engine Engaged)';
+      status.style.color = '#16a34a';
+    } else {
+      throw new Error('Key validation rejected');
+    }
+  } catch (err) {
+    alert('Connection Failed. Please confirm key syntax and structure.');
+    status.textContent = 'Status: Connection Rejected';
+    status.style.color = 'var(--accent-danger)';
+  }
+}
+
+// Hard Reset helper
+function handleResetApp() {
+  if (confirm('WARNING: This will permanently delete your profile, calorie targets, and logged history. Are you sure?')) {
+    localStorage.clear();
+    window.location.reload();
+  }
+}
+
+// --------------------------------------------------------------------------
+// 12. Date Picker Selector Setup
+// --------------------------------------------------------------------------
+function initDatePicker() {
+  const dateBtn = document.getElementById('btn-date-picker');
+  const nativePicker = document.getElementById('native-date-picker');
+  const dateLabel = document.getElementById('display-date-label');
+
+  // Trigger hidden input on button tap
+  dateBtn.addEventListener('click', () => {
+    nativePicker.click();
+  });
+
+  nativePicker.value = state.currentDate;
+
+  nativePicker.addEventListener('change', (e) => {
+    const selected = e.target.value;
+    if (!selected) return;
+
+    state.currentDate = selected;
+    
+    // Label display formats
+    const today = getTodayDateString();
+    if (selected === today) {
+      dateLabel.textContent = 'Today';
+    } else {
+      const d = new Date(selected + 'T00:00:00'); // Prevent UTC local offsets
+      dateLabel.textContent = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    // Refresh Active Section Panels
+    const activeTab = document.querySelector('.nav-tab.active').getAttribute('data-tab');
+    if (activeTab === 'dashboard') {
+      renderDashboard();
+    } else if (activeTab === 'log') {
+      renderMealsLog();
+    } else if (activeTab === 'history') {
+      renderHistoryChart();
+    }
+  });
+}
+
+// --------------------------------------------------------------------------
+// 13. System Themes Handling (Light/Dark Mode)
+// --------------------------------------------------------------------------
+function initTheme() {
+  const toggleBtn = document.getElementById('btn-theme-toggle');
+  const sunIcon = document.getElementById('icon-sun');
+  const moonIcon = document.getElementById('icon-moon');
+
+  // Check saved theme or system preferred
+  const savedTheme = localStorage.getItem('auracal_theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  const currentTheme = savedTheme || (prefersDark ? 'dark' : 'light');
+  setTheme(currentTheme);
+
+  toggleBtn.addEventListener('click', () => {
+    const nextTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+  });
+
+  function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('auracal_theme', theme);
+
+    if (theme === 'dark') {
+      sunIcon.classList.remove('hidden');
+      moonIcon.classList.add('hidden');
+    } else {
+      sunIcon.classList.add('hidden');
+      moonIcon.classList.remove('hidden');
+    }
+  }
+}
+
+// --------------------------------------------------------------------------
+// 14. Core Initialization Routing
+// --------------------------------------------------------------------------
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  initRouter();
+  initDatePicker();
+
+  const onboardingScreen = document.getElementById('screen-onboarding');
+  const mainScreen = document.getElementById('screen-main');
+
+  const hasProfile = loadState();
+
+  if (hasProfile) {
+    onboardingScreen.classList.add('hidden');
+    mainScreen.classList.remove('hidden');
+    updateDisplayTitle();
+    renderDashboard();
+  } else {
+    onboardingScreen.classList.remove('hidden');
+    mainScreen.classList.add('hidden');
+    initOnboarding();
+  }
+
+  // Register Shortcuts click listeners on Dashboard
+  document.querySelectorAll('.btn-shortcut').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const meal = btn.getAttribute('data-meal');
+      openComposer(meal);
+    });
+  });
+
+  // Floating button log click handler
+  const floatBtn = document.getElementById('btn-floating-add');
+  if (floatBtn) {
+    floatBtn.addEventListener('click', () => {
+      openComposer('breakfast');
+    });
+  }
+
+  // Composer Modal actions
+  document.getElementById('btn-close-composer').addEventListener('click', closeComposer);
+  document.getElementById('btn-composer-cancel').addEventListener('click', closeComposer);
+  document.getElementById('btn-composer-save').addEventListener('click', handleSaveMeal);
+
+  // Manual Calculator listener triggers
+  document.getElementById('manual-food-name').addEventListener('input', updateManualPreview);
+  document.getElementById('manual-food-weight').addEventListener('input', updateManualPreview);
+  document.getElementById('manual-food-density').addEventListener('input', updateManualPreview);
+  document.getElementById('btn-manual-add-item').addEventListener('click', handleManualAdd);
+
+  // Scanner triggers
+  document.getElementById('btn-action-scan-scale').addEventListener('click', () => openScanner('scale'));
+  document.getElementById('btn-action-scan-food').addEventListener('click', () => openScanner('food'));
+  document.getElementById('btn-close-scanner').addEventListener('click', closeScanner);
+  document.getElementById('btn-scanner-cancel').addEventListener('click', closeScanner);
+  document.getElementById('btn-scanner-add').addEventListener('click', handleAddScannerResult);
+
+  // Camera Upload Listener
+  document.getElementById('camera-file-input').addEventListener('change', handleImageUpload);
+
+  // Onboard test templates
+  initScannerTemplates();
+
+  // Edit details listeners
+  document.getElementById('btn-close-edit').addEventListener('click', closeEditModal);
+  document.getElementById('btn-edit-cancel').addEventListener('click', closeEditModal);
+  document.getElementById('form-edit-item').addEventListener('submit', saveEditItem);
+
+  // Settings triggers
+  document.getElementById('btn-save-settings').addEventListener('click', handleSaveSettings);
+  document.getElementById('btn-test-api-key').addEventListener('click', testApiKey);
+  document.getElementById('btn-reset-app').addEventListener('click', handleResetApp);
+
+  // PWA Service Worker Registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('[PWA] Service Worker registered successfully', reg.scope))
+        .catch(err => console.error('[PWA] Service Worker registration failed', err));
+    });
+  }
+});

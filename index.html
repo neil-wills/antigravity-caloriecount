@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Lizzy's Plate - Calorie Tracker</title>
+  
+  <!-- SEO Meta Tags -->
+  <meta name="description" content="A simple, smart, and beautiful calorie counting web application tailored for simple tracking, scale image reading, and food scanning.">
+  <meta name="theme-color" content="#0d9488">
+  
+  <!-- PWA & iOS Home Screen Meta Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Lizzy's Plate">
+  <link rel="apple-touch-icon" href="icon.svg">
+  
+  <!-- Google Fonts Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= ONBOARDING WIZARD SCREEN ================= -->
+  <div id="screen-onboarding" class="app-screen hidden">
+    <div class="onboarding-card">
+      <div class="onboarding-header">
+        <div class="logo-container">
+          <img src="icon.svg" alt="App Logo" class="app-logo-large">
+        </div>
+        <h1 id="onboarding-welcome-title">Welcome to Lizzy's Plate</h1>
+        <p>Let's personalize your daily calorie and nutrition targets.</p>
+      </div>
+
+      <form id="form-onboarding" class="onboarding-form">
+        <!-- Step 1: Basic Info -->
+        <div class="form-step active" data-step="1">
+          <h2 class="step-title">Tell us about yourself</h2>
+          
+          <div class="input-group">
+            <label for="input-display-name">App Title / Your Name</label>
+            <input type="text" id="input-display-name" value="Elizabeth" placeholder="e.g. Elizabeth" required>
+          </div>
+
+          <div class="input-row">
+            <div class="input-group">
+              <label for="input-age">Age</label>
+              <input type="number" id="input-age" value="50" min="1" max="120" required>
+            </div>
+            <div class="input-group">
+              <label>Gender</label>
+              <div class="gender-toggle-container">
+                <label class="gender-btn">
+                  <input type="radio" name="gender" value="female" checked>
+                  <span>Female</span>
+                </label>
+                <label class="gender-btn">
+                  <input type="radio" name="gender" value="male">
+                  <span>Male</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="input-row">
+            <div class="input-group">
+              <label for="input-weight">Weight (kg)</label>
+              <input type="number" id="input-weight" value="70" step="0.1" min="20" max="300" required>
+            </div>
+            <div class="input-group">
+              <label for="input-height">Height (cm)</label>
+              <input type="number" id="input-height" value="165" step="1" min="100" max="250" required>
+            </div>
+          </div>
+          
+          <button type="button" class="btn btn-primary btn-next" id="btn-onboard-next-1">Next Step</button>
+        </div>
+
+        <!-- Step 2: Activity & Goals -->
+        <div class="form-step" data-step="2">
+          <h2 class="step-title">Your Goals & Activity</h2>
+          
+          <div class="input-group">
+            <label for="input-activity">Activity Level</label>
+            <select id="input-activity" required>
+              <option value="1.2">Sedentary (Little/no exercise)</option>
+              <option value="1.375" selected>Lightly Active (Light exercise 1-3 days/wk)</option>
+              <option value="1.55">Moderately Active (Moderate exercise 3-5 days/wk)</option>
+              <option value="1.725">Very Active (Heavy exercise 6-7 days/wk)</option>
+            </select>
+          </div>
+
+          <div class="input-group">
+            <label for="input-goal">Weight Goal</label>
+            <select id="input-goal" required>
+              <option value="lose">Weight Loss (Mild Caloric Deficit)</option>
+              <option value="maintain" selected>Weight Maintenance</option>
+              <option value="gain">Muscle Gain / Healthy Weight Gain</option>
+            </select>
+          </div>
+
+          <div class="info-alert">
+            <p><strong>Note for 50+:</strong> Daily protein targets are elevated to support muscle retention and bone strength.</p>
+          </div>
+
+          <div class="btn-row">
+            <button type="button" class="btn btn-secondary btn-prev" id="btn-onboard-prev-2">Back</button>
+            <button type="submit" class="btn btn-primary" id="btn-onboard-submit">Calculate & Get Started</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MAIN APPLICATION WRAPPER ================= -->
+  <div id="screen-main" class="app-screen">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-logo">
+        <img src="icon.svg" alt="Logo" class="app-header-logo">
+        <h1 id="app-title-display">Lizzy's Plate</h1>
+      </div>
+      <div class="header-actions">
+        <!-- Date Selector Button -->
+        <button id="btn-date-picker" class="header-btn">
+          <svg viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M19 19H5V8h14m-3-7v2H8V1H6v2H5c-1.11 0-2 .89-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-1V1m-1 11h-5v5h5v-5Z"/></svg>
+          <span id="display-date-label">Today</span>
+        </button>
+        <!-- Theme Toggle Button -->
+        <button id="btn-theme-toggle" class="header-btn" aria-label="Toggle dark/light mode">
+          <svg id="icon-sun" viewBox="0 0 24 24" class="icon hidden"><path fill="currentColor" d="M12 7a5 5 0 0 1 5 5a5 5 0 0 1-5 5a5 5 0 0 1-5-5a5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3a3 3 0 0 0 3 3a3 3 0 0 0 3-3a3 3 0 0 0-3-3m0-7l2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M2 12l3.42 2.39C5.15 13.65 5 12.84 5 12c0-.84.15-1.65.42-2.39L2 12m20 0l-3.42-2.39c.27.74.42 1.55.42 2.39c0 .84-.15 1.65-.42 2.39L22 12m-10 8l-2.39-3.42c.74.27 1.55.42 2.39.42c.84 0 1.65-.15 2.39-.42L12 20M5.64 4.22l3.29 2.5C8.1 7.17 7.17 8.1 6.72 8.93L4.22 5.64m14.14 0l-2.5 3.29c.83.45 1.76 1.38 2.21 2.21l3.29-2.29m-3.29 11.23l2.5-3.29c-.45-.83-1.38-1.76-2.21-2.21l-3.29 3.29m-11.23 0l3.29-2.5c-.45-.83-1.38-1.76-2.21-2.21l-2.5 3.29Z"/></svg>
+          <svg id="icon-moon" viewBox="0 0 24 24" class="icon"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26a5.403 5.403 0 0 1-5.4-5.4a5.4 5.4 0 0 1 2.2-4.4C12.91 3.03 12.46 3 12 3Z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Hidden Date Picker Native Input -->
+    <input type="date" id="native-date-picker" class="hidden">
+
+    <!-- Active Panel Container -->
+    <main class="app-main-content">
+      
+      <!-- ================= PANEL: DASHBOARD ================= -->
+      <section id="panel-dashboard" class="app-panel">
+        <!-- Calorie Ring Summary Card -->
+        <div class="summary-card calorie-card">
+          <div class="circle-chart-container">
+            <svg class="circle-chart" viewBox="0 0 120 120">
+              <circle class="circle-chart-bg" cx="60" cy="60" r="50" fill="none" stroke-width="8"></circle>
+              <circle id="circle-progress" class="circle-chart-fill" cx="60" cy="60" r="50" fill="none" stroke-width="8" stroke-dasharray="314.16" stroke-dashoffset="314.16" stroke-linecap="round"></circle>
+            </svg>
+            <div class="circle-chart-text">
+              <span id="display-calories-left" class="calories-left-number">---</span>
+              <span class="calories-left-label">kcal left</span>
+            </div>
+          </div>
+
+          <div class="calorie-math-grid">
+            <div class="math-column">
+              <span class="math-label">Target</span>
+              <span id="display-target-calories" class="math-number">---</span>
+            </div>
+            <div class="math-sign">-</div>
+            <div class="math-column">
+              <span class="math-label">Eaten</span>
+              <span id="display-eaten-calories" class="math-number">0</span>
+            </div>
+            <div class="math-sign">=</div>
+            <div class="math-column highlight-column">
+              <span class="math-label">Remaining</span>
+              <span id="display-math-remaining" class="math-number">---</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Nutrient & Hydration Row -->
+        <div class="nutrient-grid">
+          <!-- Protein Card -->
+          <div class="summary-card nutrient-card">
+            <div class="nutrient-card-header">
+              <h3>Protein Progress</h3>
+              <span id="display-protein-text" class="nutrient-val">0g / 0g</span>
+            </div>
+            <div class="progress-bar-bg">
+              <div id="bar-protein-fill" class="progress-bar-fill protein-bar" style="width: 0%;"></div>
+            </div>
+            <p class="card-caption">Crucial for muscle maintenance (50+)</p>
+          </div>
+
+          <!-- Hydration Card -->
+          <div class="summary-card nutrient-card">
+            <div class="nutrient-card-header">
+              <h3>Hydration</h3>
+              <span id="display-water-val" class="nutrient-val">0 / 8 glasses</span>
+            </div>
+            <div class="hydration-tracker">
+              <div class="water-glasses-row" id="water-glasses-container">
+                <!-- Water glass icons injected dynamically -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fast Actions Row -->
+        <div class="dashboard-shortcuts">
+          <h3>Log Meal for <span id="dashboard-meal-period">Today</span></h3>
+          <div class="shortcut-buttons-grid">
+            <button class="btn-shortcut" data-meal="breakfast">
+              <span class="shortcut-icon">🌅</span>
+              <span>Breakfast</span>
+            </button>
+            <button class="btn-shortcut" data-meal="lunch">
+              <span class="shortcut-icon">☀️</span>
+              <span>Lunch</span>
+            </button>
+            <button class="btn-shortcut" data-meal="dinner">
+              <span class="shortcut-icon">🌙</span>
+              <span>Dinner</span>
+            </button>
+            <button class="btn-shortcut" data-meal="snacks">
+              <span class="shortcut-icon">🍎</span>
+              <span>Snacks</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PANEL: MEALS LOG ================= -->
+      <section id="panel-log" class="app-panel hidden">
+        <div class="section-header">
+          <h2>Daily Meals</h2>
+          <span class="subtitle-label">Check or edit detailed logs</span>
+        </div>
+
+        <div class="meals-log-container" id="meals-log-list">
+          <!-- Dynamically generated logs grouped by Breakfast, Lunch, Dinner, Snacks -->
+        </div>
+
+        <!-- Add Button -->
+        <button id="btn-floating-add" class="btn-floating-action" aria-label="Add a meal item">
+          <svg viewBox="0 0 24 24" class="plus-icon"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+        </button>
+      </section>
+
+      <!-- ================= PANEL: HISTORY ================= -->
+      <section id="panel-history" class="app-panel hidden">
+        <div class="section-header">
+          <h2>Progress Chart</h2>
+          <p class="subtitle-label">Daily calories vs. Target (last 7 days)</p>
+        </div>
+
+        <!-- History Graph Container -->
+        <div class="summary-card chart-card">
+          <div class="chart-wrapper" id="history-chart-container">
+            <!-- Dynamic SVG Chart injected here -->
+          </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+          <div class="summary-card stat-item-card">
+            <span class="stat-lbl">Average Intake</span>
+            <span id="stat-avg-calories" class="stat-val">--- kcal</span>
+          </div>
+          <div class="summary-card stat-item-card">
+            <span class="stat-lbl">Target Consistency</span>
+            <span id="stat-adherence-rate" class="stat-val">---</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= PANEL: SETTINGS ================= -->
+      <section id="panel-settings" class="app-panel hidden">
+        <div class="section-header">
+          <h2>Profile &amp; Settings</h2>
+          <p class="subtitle-label">Adjust targets and configure API connections</p>
+        </div>
+
+        <!-- Configured Profile Card -->
+        <div class="summary-card settings-card">
+          <h3>Elizabeth's Settings</h3>
+          <div class="settings-list">
+            
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>App Display Name</strong>
+                <span>Set custom heading</span>
+              </div>
+              <input type="text" id="settings-app-title" class="settings-input-small" value="Lizzy's Plate">
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>Weight (kg)</strong>
+                <span>Calculates BMR</span>
+              </div>
+              <input type="number" id="settings-weight" class="settings-input-small" step="0.1" value="70">
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>Age</strong>
+                <span>Adjusts BMR target</span>
+              </div>
+              <input type="number" id="settings-age" class="settings-input-small" value="50">
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>Height (cm)</strong>
+                <span>Height scale BMR</span>
+              </div>
+              <input type="number" id="settings-height" class="settings-input-small" value="165">
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>Activity Level</strong>
+              </div>
+              <select id="settings-activity" class="settings-select-small">
+                <option value="1.2">Sedentary</option>
+                <option value="1.375">Light Activity</option>
+                <option value="1.55">Moderate Activity</option>
+                <option value="1.725">Heavy Activity</option>
+              </select>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>Weight Goal</strong>
+              </div>
+              <select id="settings-goal" class="settings-select-small">
+                <option value="lose">Weight Loss</option>
+                <option value="maintain">Maintenance</option>
+                <option value="gain">Gain/Build</option>
+              </select>
+            </div>
+
+          </div>
+          <button id="btn-save-settings" class="btn btn-primary" style="margin-top: 15px; width: 100%;">Save Profile Changes</button>
+        </div>
+
+        <!-- Vision API Card -->
+        <div class="summary-card settings-card highlight-card">
+          <h3>Gemini Vision AI Engine</h3>
+          <p class="card-caption">Paste your Google Gemini API Key below to enable real camera recognition of scale weight readings and food items.</p>
+          <div class="api-key-container">
+            <input type="password" id="settings-api-key" placeholder="Enter Gemini API Key (AIzaSy...)" class="input-text-full">
+            <button id="btn-test-api-key" class="btn btn-secondary">Test Connection</button>
+          </div>
+          <p class="api-status-text" id="api-key-status">Status: Running in Mock Demonstration Mode</p>
+        </div>
+
+        <!-- How to Install iOS Card -->
+        <div class="summary-card settings-card instructions-card">
+          <h3>📲 Put Lizzy's Plate on your Home Screen</h3>
+          <ol class="ios-instructions-list">
+            <li>Open this page on your iPhone using the <strong>Safari</strong> browser.</li>
+            <li>Tap the <strong>Share</strong> button <svg viewBox="0 0 24 24" class="inline-icon"><path fill="currentColor" d="M14 9V5l7 7l-7 7v-4.1c-5 0-8.5 1.6-11 5.1c1-5 4-10 11-11Z"/></svg> (bottom middle toolbar).</li>
+            <li>Scroll down and tap <strong>"Add to Home Screen"</strong>.</li>
+            <li>Launch Lizzy's Plate directly from your phone screen like a native app!</li>
+          </ol>
+        </div>
+
+        <!-- Reset Button -->
+        <button id="btn-reset-app" class="btn btn-danger-outline" style="width: 100%; margin-top: 10px; margin-bottom: 30px;">Reset App &amp; Clear Data</button>
+      </section>
+
+    </main>
+
+    <!-- Bottom Tab Navigation Bar -->
+    <nav class="app-nav-bar">
+      <button class="nav-tab active" data-tab="dashboard">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8h5Z"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-tab" data-tab="log">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2zm0 8H7v-2h10v2z"/></svg>
+        <span>Logs</span>
+      </button>
+      <button class="nav-tab" data-tab="history">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z" transform="rotate(45, 12, 12)"/></svg>
+        <span>Charts</span>
+      </button>
+      <button class="nav-tab" data-tab="settings">
+        <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M12 15.5A3.5 3.5 0 0 1 8.5 12A3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5a3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97c0-.33-.03-.66-.07-1l2.11-1.63c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.39-1.09-.73-1.71-.99l-.37-2.65A.506.506 0 0 0 14 3h-4c-.25 0-.46.18-.5.42l-.37 2.65c-.62.26-1.19.6-1.71.99l-2.49-1c-.22-.08-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L5.57 11c-.04.34-.07.67-.07 1c0 .33.03.66.07 1l-2.11 1.63c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.39 1.09.73 1.71.99l.37 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.37-2.65c.62-.26 1.19-.6 1.71-.99l2.49 1c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.63Z"/></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ================= MODAL: MEAL COMPOSER ================= -->
+  <div id="modal-composer" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Compose <span id="composer-meal-type">Breakfast</span></h2>
+        <button class="btn-close-modal" id="btn-close-composer" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Meal composition list -->
+        <div class="composer-items-container">
+          <h3>Meal Items</h3>
+          <div id="composer-items-list">
+            <!-- List of food items built for the current meal -->
+            <p class="empty-list-placeholder">No items added to this meal yet. Use scanner or manual tools below.</p>
+          </div>
+          
+          <div class="composer-running-total">
+            <span>Meal Total:</span>
+            <strong><span id="composer-total-calories">0</span> kcal</strong>
+            <span class="divider">|</span>
+            <span><span id="composer-total-protein">0</span>g Protein</span>
+          </div>
+        </div>
+
+        <hr class="modal-divider">
+
+        <!-- Add Item Selector Section -->
+        <div class="composer-actions">
+          <h3>Add New Item</h3>
+          <div class="composer-action-buttons">
+            <!-- Scan Scale & Food button -->
+            <button type="button" class="btn-action-card" id="btn-action-scan-scale">
+              <span class="card-icon font-awesome-custom">⚖️📸</span>
+              <strong>Scan Scale + Food</strong>
+              <span>Detect weight & identify food</span>
+            </button>
+            
+            <!-- Scan Food Only button -->
+            <button type="button" class="btn-action-card" id="btn-action-scan-food">
+              <span class="card-icon font-awesome-custom">🍎📸</span>
+              <strong>Scan Food Only</strong>
+              <span>Estimate calories from picture</span>
+            </button>
+          </div>
+
+          <!-- Divider -->
+          <div class="or-separator"><span>OR ENTER MANUALLY</span></div>
+
+          <!-- Manual Calculator Form -->
+          <div class="manual-add-form">
+            <div class="input-group">
+              <label for="manual-food-name">Food Name</label>
+              <input type="text" id="manual-food-name" placeholder="e.g. Banana, Chicken Breast, etc.">
+            </div>
+
+            <div class="input-row">
+              <div class="input-group">
+                <label for="manual-food-weight">Weight (grams)</label>
+                <input type="number" id="manual-food-weight" placeholder="e.g. 150">
+              </div>
+              <div class="input-group">
+                <label for="manual-food-density">Est. Calories / 100g</label>
+                <input type="number" id="manual-food-density" placeholder="e.g. 89 (Banana)" value="150">
+              </div>
+            </div>
+
+            <div class="calculator-estimation-helper" id="calc-preview-row">
+              <span>Estimated Calories: <strong id="calc-preview-calories">0</strong> kcal</span>
+              <span class="divider">|</span>
+              <span>Protein: <strong id="calc-preview-protein">0.0</strong> g</span>
+            </div>
+
+            <button type="button" class="btn btn-secondary-outline" id="btn-manual-add-item">Add Weighed Item</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-composer-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-composer-save">Save Meal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: VISION SCANNER ================= -->
+  <div id="modal-scanner" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 id="scanner-modal-title">Vision AI Scanner</h2>
+        <button class="btn-close-modal" id="btn-close-scanner" aria-label="Close scanner">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        
+        <!-- Selection State -->
+        <div id="scanner-state-select" class="scanner-state">
+          <div class="scanner-upload-box">
+            <svg viewBox="0 0 24 24" class="upload-icon"><path fill="currentColor" d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2m8 3a5 5 0 0 0-5 5a5 5 0 0 0 5 5a5 5 0 0 0 5-5a5 5 0 0 0-5-5m0 2a3 3 0 0 1 3 3a3 3 0 0 1-3 3a3 3 0 0 1-3-3a3 3 0 0 1 3-3Z"/></svg>
+            <p>Take photo of your food or weighing scale display</p>
+            <label class="btn btn-primary" style="display: inline-block; cursor: pointer;">
+              Take or Upload Photo
+              <input type="file" id="camera-file-input" accept="image/*" capture="environment" class="hidden">
+            </label>
+            <span class="upload-subtext">Images are processed on-device and never stored.</span>
+          </div>
+
+          <!-- Simple mock templates selector to ease demonstration without active camera -->
+          <div class="mock-demo-section" id="mock-templates-container">
+            <h4>Quick Templates (Test Scanner Offline)</h4>
+            <div class="mock-templates-grid">
+              <button class="btn-mock-template" data-type="food" data-name="Apple" data-calories="95" data-protein="0.5" data-weight="180">
+                🍎 Apple (180g)
+              </button>
+              <button class="btn-mock-template" data-type="food" data-name="Avocado Toast" data-calories="340" data-protein="9.5" data-weight="150">
+                🥑 Avocado Toast (150g)
+              </button>
+              <button class="btn-mock-template" data-type="scale" data-name="Salmon Fillet" data-scale="200" data-cal100="208" data-protein100="20" data-food="Salmon Fillet">
+                ⚖️ Salmon (200g Scale)
+              </button>
+              <button class="btn-mock-template" data-type="scale" data-name="Blueberries" data-scale="75" data-cal100="57" data-protein100="0.7" data-food="Fresh Blueberries">
+                ⚖️ Blueberries (75g Scale)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scanning Preview State -->
+        <div id="scanner-state-scanning" class="scanner-state hidden">
+          <div class="live-scanner-viewport">
+            <img id="scanner-image-preview" class="scanner-preview-img" alt="Captured plate details">
+            <!-- Scanning Line Effect -->
+            <div class="scanner-line"></div>
+            <div class="scanner-bounding-box" id="scale-target-box">
+              <span class="box-tag">READING SCALE...</span>
+            </div>
+          </div>
+          <div class="scanner-status-panel">
+            <div class="spinner"></div>
+            <p id="scanner-status-msg">Analyzing image with Gemini Vision AI...</p>
+          </div>
+        </div>
+
+        <!-- Results confirmation State -->
+        <div id="scanner-state-results" class="scanner-state hidden">
+          <div class="scanning-result-success">
+            <span class="success-icon">✓</span>
+            <h3>Scan Analysis Complete!</h3>
+          </div>
+
+          <div class="summary-card scan-result-card">
+            <div class="result-header">
+              <span id="result-badge-type" class="badge">Scale Detected</span>
+              <h4 id="result-item-name">Salmon Fillet</h4>
+            </div>
+            
+            <div class="result-metrics">
+              <div class="metric-item">
+                <span class="lbl">Weight</span>
+                <span id="result-weight" class="val">---</span>
+              </div>
+              <div class="metric-item">
+                <span class="lbl">Est. Calories</span>
+                <span id="result-calories" class="val">---</span>
+              </div>
+              <div class="metric-item">
+                <span class="lbl">Protein</span>
+                <span id="result-protein" class="val">---</span>
+              </div>
+            </div>
+
+            <!-- Warning if weight couldn't be read -->
+            <div id="scale-warning-box" class="info-alert warning hidden" style="margin-top: 15px;">
+              <p>⚠️ Couldn't read scale weight clearly. Please adjust below.</p>
+            </div>
+
+            <!-- Fine-tune Result Inputs -->
+            <div class="fine-tune-form">
+              <h4>Fine-tune details before adding:</h4>
+              <div class="input-row">
+                <div class="input-group">
+                  <label for="result-input-name">Food Name</label>
+                  <input type="text" id="result-input-name" class="input-text-dark">
+                </div>
+              </div>
+              <div class="input-row">
+                <div class="input-group">
+                  <label for="result-input-weight">Weight (g)</label>
+                  <input type="number" id="result-input-weight" class="input-text-dark">
+                </div>
+                <div class="input-group">
+                  <label for="result-input-calories">Calories (kcal)</label>
+                  <input type="number" id="result-input-calories" class="input-text-dark">
+                </div>
+                <div class="input-group">
+                  <label for="result-input-protein">Protein (g)</label>
+                  <input type="number" id="result-input-protein" class="input-text-dark" step="0.1">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-scanner-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary hidden" id="btn-scanner-add">Add to Meal</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: EDIT ITEM ================= -->
+  <div id="modal-edit-item" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Edit Food Item</h2>
+        <button class="btn-close-modal" id="btn-close-edit" aria-label="Close edit modal">&times;</button>
+      </div>
+
+      <form id="form-edit-item" class="modal-body">
+        <input type="hidden" id="edit-meal-type">
+        <input type="hidden" id="edit-item-index">
+        <input type="hidden" id="edit-meal-date">
+
+        <div class="input-group">
+          <label for="edit-food-name">Food Name</label>
+          <input type="text" id="edit-food-name" required>
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label for="edit-food-weight">Weight (g)</label>
+            <input type="number" id="edit-food-weight" required>
+          </div>
+          <div class="input-group">
+            <label for="edit-food-calories">Calories (kcal)</label>
+            <input type="number" id="edit-food-calories" required>
+          </div>
+          <div class="input-group">
+            <label for="edit-food-protein">Protein (g)</label>
+            <input type="number" id="edit-food-protein" step="0.1" required>
+          </div>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-edit-cancel">Cancel</button>
+        <button type="submit" form="form-edit-item" class="btn btn-primary" id="btn-edit-save">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= JAVASCRIPT APP ENTRY ================= -->
+  <script src="app.js" type="module"></script>
+</body>
+</html>

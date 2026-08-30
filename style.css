@@ -1,0 +1,1584 @@
+/* ==========================================================================
+   AuraCal / Lizzy's Plate - Custom Design System & CSS Stylesheet
+   Designed for High Legibility (50+), Rich Dark/Light Aesthetics & PWAs
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. Design System Tokens & Variables
+   -------------------------------------------------------------------------- */
+:root {
+  /* Light Theme Color Palette */
+  --bg-app: #f8fafc;
+  --bg-header: rgba(255, 255, 255, 0.85);
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --border-color: rgba(226, 232, 240, 0.8);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  
+  /* Semantic Accent Colors */
+  --accent-teal: #0d9488;      /* Primary Brand / Health & Protein */
+  --accent-teal-rgb: 13, 148, 136;
+  --accent-orange: #f97316;    /* Calories */
+  --accent-orange-rgb: 249, 115, 22;
+  --accent-blue: #2563eb;      /* Hydration / Auxiliary */
+  --accent-blue-rgb: 37, 99, 235;
+  --accent-danger: #ef4444;    /* Errors / Resets */
+  --accent-danger-rgb: 239, 68, 68;
+
+  /* Layout and Styling Constants */
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-glow: 0 0 20px rgba(13, 148, 136, 0.2);
+  --border-radius-sm: 8px;
+  --border-radius-md: 16px;
+  --border-radius-lg: 24px;
+  --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Dark Theme Overrides */
+[data-theme="dark"] {
+  --bg-app: #090d16;
+  --bg-header: rgba(15, 23, 42, 0.85);
+  --bg-card: #151f32;
+  --bg-card-hover: #1e293b;
+  --border-color: rgba(51, 65, 85, 0.5);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #64748b;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(13, 148, 136, 0.35);
+}
+
+/* --------------------------------------------------------------------------
+   2. Reset and Base Layout Styling
+   -------------------------------------------------------------------------- */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; /* Disable tap highlight on iOS */
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+  overflow-x: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Accessible Tap Target Guideline: Minimum clickable size */
+button, select, input {
+  font-family: inherit;
+  font-size: 1rem;
+  color: inherit;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. Screen Wrapper and Header
+   -------------------------------------------------------------------------- */
+.app-screen {
+  width: 100%;
+  max-width: 600px; /* Centered mobile container for tablet/desktop views */
+  margin: 0 auto;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: var(--bg-app);
+}
+
+/* Header with Glassmorphism blur */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  padding-top: calc(16px + env(safe-area-inset-top)); /* iOS notch integration */
+  background-color: var(--bg-header);
+  border-bottom: 1px solid var(--border-color);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+.header-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app-header-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.header-logo h1 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 8px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all var(--transition-fast);
+}
+
+.header-btn:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.header-btn .icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* --------------------------------------------------------------------------
+   4. Scrollable Panels and Navigation
+   -------------------------------------------------------------------------- */
+.app-main-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: calc(90px + env(safe-area-inset-bottom)); /* Ensure no cutoff behind nav bar */
+}
+
+/* App Bottom Navigation Bar */
+.app-nav-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom)) 10px; /* iOS home bar safe area padding */
+  background-color: var(--bg-header);
+  border-top: 1px solid var(--border-color);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 10;
+  box-shadow: 0 -4px 10px rgba(0,0,0,0.03);
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 6px 0;
+  transition: all var(--transition-fast);
+}
+
+.nav-tab:hover {
+  color: var(--text-primary);
+}
+
+.nav-icon {
+  width: 22px;
+  height: 22px;
+  transition: transform var(--transition-fast);
+}
+
+.nav-tab.active {
+  color: var(--accent-teal);
+}
+
+.nav-tab.active .nav-icon {
+  transform: translateY(-2px);
+}
+
+/* Floating Action Button (Log Section) */
+.btn-floating-action {
+  position: fixed;
+  bottom: calc(95px + env(safe-area-inset-bottom));
+  right: calc((100vw - 600px)/2 + 24px); /* Anchor relative to viewport limit */
+  z-index: 9;
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background-color: var(--accent-teal);
+  color: white;
+  border: none;
+  box-shadow: 0 4px 12px rgba(13, 148, 136, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+@media (max-width: 600px) {
+  .btn-floating-action {
+    right: 24px;
+  }
+}
+
+.btn-floating-action:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(13, 148, 136, 0.6);
+}
+
+.btn-floating-action:active {
+  transform: scale(0.95);
+}
+
+.plus-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* --------------------------------------------------------------------------
+   5. Card Layouts & Dashboard Panel
+   -------------------------------------------------------------------------- */
+.summary-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 24px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-md);
+  transition: background-color var(--transition-normal), border-color var(--transition-normal);
+}
+
+/* Calorie progress ring layout */
+.calorie-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.circle-chart-container {
+  position: relative;
+  width: 180px;
+  height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.circle-chart {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* Start progress at the top center */
+}
+
+.circle-chart-bg {
+  stroke: var(--border-color);
+}
+
+.circle-chart-fill {
+  stroke: var(--accent-orange);
+  transition: stroke-dashoffset 0.8s ease-in-out;
+}
+
+.circle-chart-text {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.calories-left-number {
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.calories-left-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* Calorie Mathematical Summary Grid */
+.calorie-math-grid {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+}
+
+.math-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.math-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.math-number {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.math-sign {
+  color: var(--text-muted);
+  font-weight: 500;
+  font-size: 1.2rem;
+  padding: 0 4px;
+}
+
+.highlight-column .math-number {
+  color: var(--accent-teal);
+}
+
+/* Protein & Hydration Grid */
+.nutrient-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+}
+
+@media (min-width: 480px) {
+  .nutrient-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.nutrient-card {
+  padding: 18px;
+  margin-bottom: 0;
+}
+
+.nutrient-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 12px;
+}
+
+.nutrient-card-header h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.nutrient-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.progress-bar-bg {
+  width: 100%;
+  height: 10px;
+  background-color: var(--border-color);
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease-out;
+}
+
+.protein-bar {
+  background-color: var(--accent-teal);
+}
+
+.card-caption {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Hydration Glasses */
+.hydration-tracker {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 38px;
+}
+
+.water-glasses-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.glass-btn {
+  background: none;
+  border: none;
+  font-size: 1.45rem;
+  cursor: pointer;
+  filter: grayscale(100%) opacity(0.3);
+  transition: all var(--transition-fast);
+}
+
+.glass-btn.active {
+  filter: grayscale(0%) opacity(1);
+  transform: scale(1.15);
+}
+
+/* Log Meal Shortcut row */
+.dashboard-shortcuts {
+  margin-top: 25px;
+}
+
+.dashboard-shortcuts h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+.shortcut-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 400px) {
+  .shortcut-buttons-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.btn-shortcut {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-shortcut:hover {
+  background-color: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-shortcut:active {
+  transform: translateY(0);
+}
+
+.shortcut-icon {
+  font-size: 1.6rem;
+}
+
+.btn-shortcut span:last-child {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
+   6. Meal Log View Panel
+   -------------------------------------------------------------------------- */
+.section-header {
+  margin-bottom: 20px;
+}
+
+.section-header h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+}
+
+.subtitle-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Grouped Meals list */
+.meal-group-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--transition-normal);
+}
+
+.meal-group-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.meal-title-block {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.meal-emoji {
+  font-size: 1.4rem;
+}
+
+.meal-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.meal-group-totals {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.meal-total-kcal {
+  font-weight: 700;
+  color: var(--accent-orange);
+}
+
+.meal-total-prot {
+  font-weight: 600;
+  color: var(--accent-teal);
+}
+
+.chevron-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--text-muted);
+  transition: transform var(--transition-fast);
+}
+
+.meal-group-card.expanded .chevron-icon {
+  transform: rotate(180deg);
+}
+
+/* Detail list under expanded header */
+.meal-items-detail-list {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.log-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.log-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.log-item-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.log-item-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.log-item-values {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.log-item-calories {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.log-item-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-item-action {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-item-action:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.btn-item-action.delete-btn:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--accent-danger);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.btn-item-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.no-meals-log {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+/* --------------------------------------------------------------------------
+   7. Modals (Composer, Vision Scanner, Onboarding Setup)
+   -------------------------------------------------------------------------- */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 100;
+  display: flex;
+  align-items: flex-end; /* Mobile drawer sheets sliding from bottom */
+  justify-content: center;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@media (min-width: 600px) {
+  .modal-backdrop {
+    align-items: center; /* Center-screen modal on desktop */
+  }
+}
+
+.modal-card {
+  width: 100%;
+  max-width: 600px;
+  background-color: var(--bg-card);
+  border-top-left-radius: var(--border-radius-lg);
+  border-top-right-radius: var(--border-radius-lg);
+  box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid var(--border-color);
+}
+
+@media (min-width: 600px) {
+  .modal-card {
+    border-radius: var(--border-radius-lg);
+    max-height: 85vh;
+  }
+}
+
+.modal-header {
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.btn-close-modal {
+  background: none;
+  border: none;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  background-color: var(--bg-card-hover);
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+}
+
+/* Onboarding Screen Layout */
+#screen-onboarding {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  background-color: var(--bg-app);
+  overflow-y: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.onboarding-card {
+  width: 100%;
+  max-width: 480px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 32px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.onboarding-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.logo-container {
+  margin-bottom: 15px;
+}
+
+.app-logo-large {
+  width: 72px;
+  height: 72px;
+}
+
+.onboarding-header h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  margin-bottom: 6px;
+}
+
+.onboarding-header p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.form-step {
+  display: none;
+}
+
+.form-step.active {
+  display: block;
+}
+
+.step-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: var(--text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   8. Form Controls & Inputs
+   -------------------------------------------------------------------------- */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.input-row .input-group {
+  margin-bottom: 0;
+}
+
+label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+input, select {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+  font-weight: 500;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+input:focus, select:focus {
+  border-color: var(--accent-teal);
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15);
+}
+
+/* Gender Picker Buttons */
+.gender-toggle-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.gender-btn {
+  position: relative;
+  cursor: pointer;
+}
+
+.gender-btn input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.gender-btn span {
+  display: block;
+  text-align: center;
+  padding: 11px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
+}
+
+.gender-btn input:checked + span {
+  border-color: var(--accent-teal);
+  background-color: rgba(13, 148, 136, 0.08);
+  color: var(--accent-teal);
+}
+
+/* Info Alerts */
+.info-alert {
+  background-color: rgba(13, 148, 136, 0.08);
+  border: 1px solid rgba(13, 148, 136, 0.2);
+  border-radius: var(--border-radius-sm);
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.info-alert.warning {
+  background-color: rgba(249, 115, 22, 0.08);
+  border-color: rgba(249, 115, 22, 0.2);
+  color: #c2410c;
+}
+
+/* Standard Buttons */
+.btn {
+  padding: 12px 24px;
+  font-weight: 600;
+  border-radius: var(--border-radius-sm);
+  cursor: pointer;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.btn-primary {
+  background-color: var(--accent-teal);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #0f766e;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.btn-secondary:hover {
+  background-color: var(--text-muted);
+}
+
+.btn-danger-outline {
+  background: none;
+  border: 1px solid var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+.btn-danger-outline:hover {
+  background-color: rgba(239, 68, 68, 0.08);
+}
+
+.btn-secondary-outline {
+  background: none;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  width: 100%;
+}
+
+.btn-secondary-outline:hover {
+  background-color: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.btn-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.btn-row .btn {
+  flex: 1;
+}
+
+/* --------------------------------------------------------------------------
+   9. Multi-Item Composer Modal Details
+   -------------------------------------------------------------------------- */
+.composer-items-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.composer-items-container h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+#composer-items-list {
+  background-color: var(--bg-app);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  min-height: 80px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.empty-list-placeholder {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: auto;
+}
+
+.composer-running-total {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  padding-top: 6px;
+}
+
+.composer-running-total strong {
+  color: var(--accent-orange);
+  font-size: 1.05rem;
+}
+
+.composer-running-total .divider {
+  color: var(--border-color);
+}
+
+.modal-divider {
+  border: 0;
+  height: 1px;
+  background-color: var(--border-color);
+  margin: 20px 0;
+}
+
+.composer-action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.btn-action-card {
+  background-color: var(--bg-card);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius-md);
+  padding: 16px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-action-card:hover {
+  border-color: var(--accent-teal);
+  background-color: rgba(13, 148, 136, 0.03);
+}
+
+.card-icon {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+
+.btn-action-card strong {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.btn-action-card span:last-child {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.or-separator {
+  text-align: center;
+  position: relative;
+  margin: 20px 0;
+}
+
+.or-separator::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background-color: var(--border-color);
+  z-index: 1;
+}
+
+.or-separator span {
+  background-color: var(--bg-card);
+  padding: 0 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 2;
+}
+
+.calculator-estimation-helper {
+  font-size: 0.85rem;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-secondary);
+}
+
+.calculator-estimation-helper .divider {
+  color: var(--border-color);
+}
+
+/* --------------------------------------------------------------------------
+   10. Camera / Vision Scanner Layout & Animations
+   -------------------------------------------------------------------------- */
+.scanner-upload-box {
+  border: 3px dashed var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  background-color: var(--bg-app);
+}
+
+.upload-icon {
+  width: 56px;
+  height: 56px;
+  color: var(--text-muted);
+}
+
+.upload-subtext {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  max-width: 250px;
+  line-height: 1.3;
+}
+
+/* Live Viewport */
+.live-scanner-viewport {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--border-radius-md);
+  position: relative;
+  overflow: hidden;
+  background-color: #000;
+  border: 1px solid var(--border-color);
+}
+
+.scanner-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Bounding Box Mock Effect */
+.scanner-bounding-box {
+  position: absolute;
+  top: 35%;
+  left: 25%;
+  width: 50%;
+  height: 30%;
+  border: 3px solid #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+  border-radius: 4px;
+  pointer-events: none;
+  animation: pulseBox 2s infinite ease-in-out;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 4px;
+}
+
+.box-tag {
+  background-color: #10b981;
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+/* Neon Scanning Laser Line */
+.scanner-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, #0d9488, #10b981, #0d9488, transparent);
+  box-shadow: 0 0 12px 3px rgba(16, 185, 129, 0.6);
+  opacity: 0.8;
+  pointer-events: none;
+  animation: scanLineMove 2s infinite ease-in-out;
+}
+
+.scanner-status-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  padding: 16px;
+  background-color: var(--bg-card-hover);
+  border-radius: var(--border-radius-sm);
+  margin-top: 15px;
+}
+
+.scanner-status-panel p {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Spinner */
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px fill var(--border-color);
+  border-top: 3px solid var(--accent-teal);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Results State details */
+.scanning-result-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #16a34a;
+  margin-bottom: 16px;
+}
+
+.success-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 12px;
+  background-color: rgba(22, 163, 74, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.scan-result-card {
+  padding: 18px;
+}
+
+.result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.result-header h4 {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.badge {
+  background-color: var(--accent-teal);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.result-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+.metric-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-color: var(--bg-app);
+  padding: 10px;
+  border-radius: var(--border-radius-sm);
+}
+
+.metric-item .lbl {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.metric-item .val {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.fine-tune-form h4 {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.input-text-dark {
+  background-color: var(--bg-app);
+}
+
+/* Offline templates buttons */
+.mock-demo-section {
+  margin-top: 25px;
+  width: 100%;
+}
+
+.mock-demo-section h4 {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  text-align: left;
+}
+
+.mock-templates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.btn-mock-template {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm);
+  padding: 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transition-fast);
+}
+
+.btn-mock-template:hover {
+  border-color: var(--accent-teal);
+  background-color: var(--bg-card-hover);
+}
+
+/* --------------------------------------------------------------------------
+   11. History Panel SVG Chart Styles
+   -------------------------------------------------------------------------- */
+.chart-card {
+  padding: 16px;
+}
+
+.chart-wrapper {
+  width: 100%;
+  height: 200px;
+}
+
+/* SVG graph elements styling */
+.chart-grid-line {
+  stroke: var(--border-color);
+  stroke-width: 1;
+  stroke-dasharray: 4,4;
+}
+
+.chart-target-line {
+  stroke: var(--accent-teal);
+  stroke-width: 1.5;
+  stroke-dasharray: 6,4;
+}
+
+.chart-intake-line {
+  stroke: var(--accent-orange);
+  stroke-width: 3.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.chart-intake-area {
+  fill: rgba(249, 115, 22, 0.08);
+}
+
+.chart-dot {
+  fill: var(--accent-orange);
+  stroke: var(--bg-card);
+  stroke-width: 2.5;
+  transition: r var(--transition-fast);
+  cursor: pointer;
+}
+
+.chart-dot:hover {
+  r: 7;
+}
+
+.chart-axis-text {
+  font-size: 10px;
+  fill: var(--text-muted);
+  font-weight: 600;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.stat-item-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-lbl {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stat-val {
+  font-size: 1.25rem;
+  font-weight: 800;
+  margin-top: 4px;
+}
+
+/* Settings View styling */
+.settings-card {
+  padding: 18px;
+}
+
+.settings-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.settings-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.settings-label strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.settings-label span {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.settings-input-small {
+  width: 90px;
+  padding: 6px 10px;
+  text-align: right;
+}
+
+.settings-select-small {
+  width: 140px;
+  padding: 6px 10px;
+}
+
+.highlight-card {
+  border-color: rgba(13, 148, 136, 0.4);
+  background-color: rgba(13, 148, 136, 0.02);
+}
+
+.api-key-container {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.input-text-full {
+  flex: 1;
+  padding: 10px 14px;
+}
+
+.api-status-text {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+.inline-icon {
+  width: 14px;
+  height: 14px;
+  vertical-align: middle;
+}
+
+.ios-instructions-list {
+  margin-left: 20px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   12. Standard CSS Animation Keyframes
+   -------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100px); }
+  to { transform: translateY(0); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes scanLineMove {
+  0% { top: 0%; }
+  50% { top: 100%; }
+  100% { top: 0%; }
+}
+
+@keyframes pulseBox {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
+}
