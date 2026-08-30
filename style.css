@@ -103,13 +103,13 @@ button, select, input {
   flex-direction: column;
   position: relative;
   background-color: var(--bg-app);
-  background-image: linear-gradient(rgba(241, 245, 249, 0.88), rgba(241, 245, 249, 0.88)), url('background.jpg');
+  background-image: linear-gradient(rgba(241, 245, 249, 0.45), rgba(241, 245, 249, 0.45)), url('background.jpg');
   background-size: cover;
   background-position: center;
 }
 
 [data-theme="dark"] .app-screen {
-  background-image: linear-gradient(rgba(11, 15, 25, 0.91), rgba(11, 15, 25, 0.91)), url('background.jpg');
+  background-image: linear-gradient(rgba(11, 15, 25, 0.65), rgba(11, 15, 25, 0.65)), url('background.jpg');
 }
 
 /* Header with Glassmorphism blur */
