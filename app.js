@@ -1822,9 +1822,107 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Hard Reset helper
 function handleResetApp() {
-  if (confirm('WARNING: This will permanently delete your profile, calorie targets, and logged history. Are you sure?')) {
+  if (confirm('CAUTION: This will permanently delete your profile, saved Gemini API Key, and all logged meals, hydration, and exercise history. This action cannot be undone. Are you sure you want to proceed?')) {
     localStorage.clear();
     window.location.reload();
+  }
+}
+
+// Exports all user state logs to a readable text file (.txt)
+function exportLogsToTextFile() {
+  let txt = `=========================================\n`;
+  txt += `LIZZY'S PLATE - DATA LOG EXPORT\n`;
+  txt += `Generated on: ${new Date().toLocaleString()}\n`;
+  txt += `=========================================\n\n`;
+
+  if (state.profile) {
+    txt += `USER PROFILE:\n`;
+    txt += `- Name: ${state.profile.name || 'Elizabeth'}\n`;
+    txt += `- Age: ${state.profile.age || '50'}\n`;
+    txt += `- Gender: ${state.profile.gender || 'male'}\n`;
+    txt += `- Units: ${state.profile.units || 'imperial'}\n`;
+    txt += `- Target Calories: ${state.profile.targetCalories || '---'} kcal\n`;
+    txt += `- Target Protein: ${state.profile.targetProtein || '---'}g\n\n`;
+  }
+
+  txt += `-----------------------------------------\n`;
+  txt += `LOGGED HISTORY:\n`;
+  txt += `-----------------------------------------\n\n`;
+
+  // Get all unique dates from meals, water, and exercise
+  const allDates = new Set([
+    ...Object.keys(state.meals),
+    ...Object.keys(state.water),
+    ...Object.keys(state.exercise)
+  ]);
+
+  const sortedDates = Array.from(allDates).sort((a, b) => b.localeCompare(a)); // Newest first
+
+  if (sortedDates.length === 0) {
+    txt += `No logged entries found.\n`;
+  } else {
+    sortedDates.forEach(date => {
+      txt += `DATE: ${date}\n`;
+      txt += `-----------------------------------------\n`;
+
+      // Meals
+      const dayMeals = state.meals[date] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
+      const periods = [
+        { id: 'breakfast', label: '🌅 Breakfast' },
+        { id: 'lunch', label: '☀️ Lunch' },
+        { id: 'dinner', label: '🌙 Dinner' },
+        { id: 'snacks', label: '🍎 Snacks' }
+      ];
+
+      periods.forEach(p => {
+        const items = dayMeals[p.id] || [];
+        txt += `${p.label}:\n`;
+        if (items.length === 0) {
+          txt += `  (No items logged)\n`;
+        } else {
+          items.forEach(item => {
+            txt += `  - ${item.name} (${item.weightGrams}g) | ${item.calories} kcal | ${item.protein}g protein\n`;
+            if (item.ingredients && item.ingredients.length > 0) {
+              txt += `    🔍 Ingredients: ${item.ingredients.join(', ')}\n`;
+            }
+          });
+        }
+      });
+
+      // Water
+      const glasses = state.water[date] || 0;
+      txt += `💦 Hydration:\n`;
+      txt += `  - ${glasses} / 8 glasses of water\n`;
+
+      // Exercise
+      const workouts = state.exercise[date] || [];
+      txt += `🏃‍♂️ Exercise:\n`;
+      if (workouts.length === 0) {
+        txt += `  - (No exercise logged)\n`;
+      } else {
+        workouts.forEach(w => {
+          txt += `  - ${w.name} | ${w.duration} mins | ${w.caloriesBurned} kcal burned\n`;
+        });
+      }
+
+      txt += `\n=========================================\n\n`;
+    });
+  }
+
+  // Create and download file
+  try {
+    const blob = new Blob([txt], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `lizzys_plate_logs_${new Date().toISOString().slice(0, 10)}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error('Error exporting file:', err);
+    alert('Failed to generate log file download.');
   }
 }
 
@@ -2066,7 +2164,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-save-settings').addEventListener('click', handleSaveSettings);
   document.getElementById('btn-test-api-key').addEventListener('click', testApiKey);
   
-  // Clear Profile / Start Over (Renamed Reset App button for clarity)
+  // Data Portability & Clear Profile triggers
+  const exportBtn = document.getElementById('btn-export-logs');
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportLogsToTextFile);
+  }
   const resetBtn = document.getElementById('btn-reset-app');
   if (resetBtn) {
     resetBtn.textContent = 'Reset Profile & Start Over';

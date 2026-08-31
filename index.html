@@ -634,8 +634,15 @@
           </ol>
         </div>
 
-        <!-- Reset Button -->
-        <button id="btn-reset-app" class="btn btn-danger-outline" style="width: 100%; margin-top: 10px; margin-bottom: 30px;">Reset App &amp; Clear Data</button>
+        <!-- Data Management Options -->
+        <div class="summary-card settings-card">
+          <h3>Data &amp; Profile Management</h3>
+          <p class="card-caption">Save your history as a readable file or reset your configuration. Resets are permanent.</p>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px; margin-bottom: 5px;">
+            <button id="btn-export-logs" class="btn btn-secondary-outline" style="width: 100%; border-color: var(--accent-teal); color: var(--accent-teal);">💾 Save Log to Text File</button>
+            <button id="btn-reset-app" class="btn btn-danger-outline" style="width: 100%;">Reset Profile &amp; Start Over</button>
+          </div>
+        </div>
       </section>
 
     </main>
