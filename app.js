@@ -259,7 +259,7 @@ function initOnboarding() {
       heightCm = rawHeightCm;
     }
 
-    const avatar = document.getElementById('input-avatar-val').value || '🥑';
+    const avatar = document.getElementById('input-avatar-select').value || '🥑';
 
     const rawProfile = { 
       name, age, gender, units, 
@@ -1243,16 +1243,8 @@ function loadSettingsInputs() {
   document.getElementById('settings-goal').value = prof.goal;
   document.getElementById('settings-api-key').value = prof.apiKey || '';
 
-  // Preload settings avatar picker
-  const savedAvatar = prof.avatar || '🥑';
-  document.getElementById('settings-avatar-val').value = savedAvatar;
-  document.querySelectorAll('#settings-avatar-picker .btn-avatar').forEach(btn => {
-    if (btn.getAttribute('data-avatar') === savedAvatar) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
+  // Preload settings avatar dropdown
+  document.getElementById('settings-avatar-select').value = prof.avatar || '🥑';
 
   const weightTitle = document.getElementById('settings-weight-lbl-title');
   const heightFtIn = document.getElementById('settings-height-row-ftin');
@@ -1285,7 +1277,7 @@ function handleSaveSettings() {
   const goal = document.getElementById('settings-goal').value;
   const apiKey = document.getElementById('settings-api-key').value.trim();
   const units = document.getElementById('settings-units').value;
-  const avatar = document.getElementById('settings-avatar-val').value || '🥑';
+  const avatar = document.getElementById('settings-avatar-select').value || '🥑';
 
   let weightKg = 0;
   let heightCm = 0;
@@ -1570,29 +1562,7 @@ document.addEventListener('DOMContentLoaded', () => {
     resetBtn.addEventListener('click', handleResetApp);
   }
 
-  // Onboarding avatar picker click handler
-  const onboardAvatarInput = document.getElementById('input-avatar-val');
-  if (onboardAvatarInput) {
-    document.querySelectorAll('#onboard-avatar-picker .btn-avatar').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#onboard-avatar-picker .btn-avatar').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        onboardAvatarInput.value = btn.getAttribute('data-avatar');
-      });
-    });
-  }
-
-  // Settings avatar picker click handler
-  const settingsAvatarInput = document.getElementById('settings-avatar-val');
-  if (settingsAvatarInput) {
-    document.querySelectorAll('#settings-avatar-picker .btn-avatar').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('#settings-avatar-picker .btn-avatar').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        settingsAvatarInput.value = btn.getAttribute('data-avatar');
-      });
-    });
-  }
+  // No manual click listeners needed for avatar select dropdowns
 
   // Welcome tips close button listener
   const closeTipsBtn = document.getElementById('btn-close-tips');

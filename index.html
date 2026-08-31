@@ -48,16 +48,15 @@
           </div>
 
           <div class="input-group">
-            <label>Choose your Avatar</label>
-            <div class="avatar-picker-grid" id="onboard-avatar-picker">
-              <button type="button" class="btn-avatar active" data-avatar="🥑">🥑</button>
-              <button type="button" class="btn-avatar" data-avatar="🧘‍♀️">🧘‍♀️</button>
-              <button type="button" class="btn-avatar" data-avatar="🏃‍♀️">🏃‍♀️</button>
-              <button type="button" class="btn-avatar" data-avatar="👩‍🍳">👩‍🍳</button>
-              <button type="button" class="btn-avatar" data-avatar="🏃‍♂️">🏃‍♂️</button>
-              <button type="button" class="btn-avatar" data-avatar="👨‍🍳">👨‍🍳</button>
-            </div>
-            <input type="hidden" id="input-avatar-val" value="🥑">
+            <label for="input-avatar-select">Choose your Avatar</label>
+            <select id="input-avatar-select">
+              <option value="🥑" selected>🥑 Avocado (Mascot Default)</option>
+              <option value="🧘‍♀️">🧘‍♀️ Active Zen (Female)</option>
+              <option value="🏃‍♀️">🏃‍♀️ Runner (Female)</option>
+              <option value="👩‍🍳">👩‍🍳 Chef (Female)</option>
+              <option value="🏃‍♂️">🏃‍♂️ Runner (Male)</option>
+              <option value="👨‍🍳">👨‍🍳 Chef (Male)</option>
+            </select>
           </div>
 
           <div class="input-row">
@@ -377,20 +376,19 @@
               <input type="text" id="settings-app-title" class="settings-input-small" value="Lizzy">
             </div>
 
-            <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
-              <div class="settings-label" style="width: 100%; display: flex; justify-content: space-between;">
+            <div class="settings-item">
+              <div class="settings-label">
                 <strong>Avatar</strong>
                 <span>Choose your look</span>
               </div>
-              <div class="avatar-picker-grid" id="settings-avatar-picker" style="width: 100%; margin-top: 4px;">
-                <button type="button" class="btn-avatar" data-avatar="🥑">🥑</button>
-                <button type="button" class="btn-avatar" data-avatar="🧘‍♀️">🧘‍♀️</button>
-                <button type="button" class="btn-avatar" data-avatar="🏃‍♀️">🏃‍♀️</button>
-                <button type="button" class="btn-avatar" data-avatar="👩‍🍳">👩‍🍳</button>
-                <button type="button" class="btn-avatar" data-avatar="🏃‍♂️">🏃‍♂️</button>
-                <button type="button" class="btn-avatar" data-avatar="👨‍🍳">👨‍🍳</button>
-              </div>
-              <input type="hidden" id="settings-avatar-val" value="🥑">
+              <select id="settings-avatar-select" class="settings-select-small">
+                <option value="🥑" selected>🥑 Avocado (Default)</option>
+                <option value="🧘‍♀️">🧘‍♀️ Active Zen (Female)</option>
+                <option value="🏃‍♀️">🏃‍♀️ Runner (Female)</option>
+                <option value="👩‍🍳">👩‍🍳 Chef (Female)</option>
+                <option value="🏃‍♂️">🏃‍♂️ Runner (Male)</option>
+                <option value="👨‍🍳">👨‍🍳 Chef (Male)</option>
+              </select>
             </div>
 
             <div class="settings-item">
