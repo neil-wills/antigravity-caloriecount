@@ -1289,7 +1289,13 @@ Photo-based calorie tracking systematically underestimates energy by 25-35% (app
 4. Estimate realistic portion weights in grams, calculate accurate calories (including cooking fats), and protein in grams.
 5. List all identified ingredients for each item in "detectedIngredients".
 
-Return strictly a JSON object formatted as:
+If the image does NOT contain food items, ingredients, or a food weighing scale, return strictly:
+{
+  "isFoodDetected": false,
+  "rejectionMessage": "No food or food scale was detected in this photo. Please take a clear photo of your meal or ingredients."
+}
+
+If food or scale is detected, return strictly:
 {
   "isFoodDetected": true,
   "scaleWeightDetected": true/false,
@@ -1330,7 +1336,12 @@ async function processVisionAnalysis(base64Data, mimeType) {
     } catch (e) {
       // Serverless not available
     }
-    runMockScanningAnimation();
+
+    // Fail gracefully with helpful guidance
+    showScannerError(
+      "Gemini AI Key Required",
+      "To analyze your live photos with Gemini AI, please enter your API Key in Settings or set GEMINI_API_KEY on the server. You can also test the scanner using the sample templates on the home screen."
+    );
   }
 }
 
@@ -1355,6 +1366,11 @@ async function callServerlessVisionAPI(base64Data, mimeType) {
     const data = await response.json();
     const textResult = data.candidates[0].content.parts[0].text;
     const parsedData = JSON.parse(textResult);
+
+    if (parsedData.isFoodDetected === false) {
+      showScannerError("No Food Detected", parsedData.rejectionMessage || "We couldn't detect any food or food weighing scale in this image. Please take a clear photo of your food or ingredients.");
+      return;
+    }
 
     incrementDailyScanCounter();
     displayScanResults(parsedData);
@@ -1404,6 +1420,11 @@ async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
     const textResult = data.candidates[0].content.parts[0].text;
     const parsedData = JSON.parse(textResult);
     
+    if (parsedData.isFoodDetected === false) {
+      showScannerError("No Food Detected", parsedData.rejectionMessage || "We couldn't detect any food or food weighing scale in this image. Please take a clear photo of your food or ingredients.");
+      return;
+    }
+
     incrementDailyScanCounter();
     displayScanResults(parsedData);
   } catch (error) {
@@ -1420,8 +1441,13 @@ function showScannerError(title, msg) {
   if (errorMsg) errorMsg.textContent = msg;
 }
 
-// Mock Scanning Simulation with sequential visual text updates
+// Mock Scanning Simulation with sequential visual text updates (for sample demo templates)
 function runMockScanningAnimation(templateData = null) {
+  if (!templateData) {
+    showScannerError("No Food Detected", "Please take a clear photo of your food plate or weighing scale.");
+    return;
+  }
+
   const statusMsg = document.getElementById('scanner-status-msg');
   
   const steps = [
@@ -1438,51 +1464,7 @@ function runMockScanningAnimation(templateData = null) {
   });
 
   setTimeout(() => {
-    let mockResult = {};
-
-    if (templateData) {
-      mockResult = templateData;
-    } else {
-      if (scannerMode === 'scale') {
-        mockResult = {
-          isFoodDetected: true,
-          scaleWeightDetected: true,
-          items: [
-            {
-              name: "Grilled Chicken Breast (Pan-Seared)",
-              weightGrams: 185,
-              calories: Math.round(185 * 1.65 + 60), // including 60 kcal cooking fat
-              proteinGrams: parseFloat((185 * 0.31).toFixed(1)),
-              detectedIngredients: ["Chicken Breast", "Olive Oil (0.5 tbsp)", "Sea Salt", "Black Pepper"],
-              hiddenFatsNote: "Includes ~0.5 tbsp cooking olive oil (+60 kcal)"
-            }
-          ]
-        };
-      } else {
-        mockResult = {
-          isFoodDetected: true,
-          scaleWeightDetected: false,
-          items: [
-            {
-              name: "Greek Yogurt Breakfast Bowl",
-              weightGrams: 220,
-              calories: 290,
-              proteinGrams: 15.0,
-              detectedIngredients: ["0% Greek Yogurt", "Blueberries", "Raw Honey", "Chia Seeds"]
-            },
-            {
-              name: "Almond Butter Toast",
-              weightGrams: 75,
-              calories: 210,
-              proteinGrams: 6.5,
-              detectedIngredients: ["Whole Wheat Bread", "Almond Butter", "Banana Slices"]
-            }
-          ]
-        };
-      }
-    }
-
-    displayScanResults(mockResult);
+    displayScanResults(templateData);
   }, 2600);
 }
 

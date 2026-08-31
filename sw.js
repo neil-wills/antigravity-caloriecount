@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lizzys-plate-v35';
+const CACHE_NAME = 'lizzys-plate-v36';
 const ASSETS = [
   './',
   './index.html',
