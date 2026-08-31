@@ -733,7 +733,14 @@ button, select, input {
 .no-meals-log {
   text-align: center;
   padding: 40px 20px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  box-shadow: var(--shadow-sm);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: var(--text-muted);
+  margin-top: 10px;
 }
 
 /* --------------------------------------------------------------------------
