@@ -471,6 +471,70 @@
           <button id="btn-cancel-settings" class="btn btn-secondary" style="margin-top: 10px; width: 100%;">Cancel &amp; Go Back</button>
         </div>
 
+        <!-- Meal Time Auto-Detection Card -->
+        <div class="summary-card settings-card">
+          <h3>Meal Time Auto-Detection</h3>
+          <p class="card-caption">Configure 24-hour time windows. Tapping the quick add button will automatically select the meal category based on your local time.</p>
+          <div class="settings-list">
+            
+            <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <div class="settings-label" style="width: 100%; display: flex; justify-content: space-between;">
+                <strong>🍳 Breakfast Window</strong>
+                <span>Default: 06:00 - 10:00</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                <div class="input-group" style="margin-bottom: 0;">
+                  <label for="settings-breakfast-start" style="font-size: 0.75rem;">Start Time</label>
+                  <input type="time" id="settings-breakfast-start" value="06:00">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                  <label for="settings-breakfast-end" style="font-size: 0.75rem;">End Time</label>
+                  <input type="time" id="settings-breakfast-end" value="10:00">
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <div class="settings-label" style="width: 100%; display: flex; justify-content: space-between;">
+                <strong>☀️ Lunch Window</strong>
+                <span>Default: 11:30 - 14:30</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                <div class="input-group" style="margin-bottom: 0;">
+                  <label for="settings-lunch-start" style="font-size: 0.75rem;">Start Time</label>
+                  <input type="time" id="settings-lunch-start" value="11:30">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                  <label for="settings-lunch-end" style="font-size: 0.75rem;">End Time</label>
+                  <input type="time" id="settings-lunch-end" value="14:30">
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <div class="settings-label" style="width: 100%; display: flex; justify-content: space-between;">
+                <strong>🌙 Dinner Window</strong>
+                <span>Default: 18:00 - 21:00</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%;">
+                <div class="input-group" style="margin-bottom: 0;">
+                  <label for="settings-dinner-start" style="font-size: 0.75rem;">Start Time</label>
+                  <input type="time" id="settings-dinner-start" value="18:00">
+                </div>
+                <div class="input-group" style="margin-bottom: 0;">
+                  <label for="settings-dinner-end" style="font-size: 0.75rem;">End Time</label>
+                  <input type="time" id="settings-dinner-end" value="21:00">
+                </div>
+              </div>
+            </div>
+            
+            <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.35; margin: 4px 0 0 0; font-weight: 500;">
+              💡 <strong>Note on Snacks</strong>: Any time falling outside these configured windows (e.g. mid-morning, afternoon, or late night) will automatically default to the <strong>Snacks</strong> category.
+            </p>
+
+          </div>
+        </div>
+
         <!-- Vision API Card -->
         <div class="summary-card settings-card highlight-card">
           <h3>Gemini Vision AI Engine</h3>
@@ -538,6 +602,17 @@
       </div>
 
       <div class="modal-body">
+        <!-- Meal Period Category Selector -->
+        <div class="input-group" style="margin-bottom: 15px;">
+          <label for="composer-meal-select" style="font-weight: 700; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; display: block;">Meal Category</label>
+          <select id="composer-meal-select" style="width: 100%; border: 1px solid var(--border-color); background-color: var(--bg-card); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); cursor: pointer;">
+            <option value="breakfast">🌅 Breakfast</option>
+            <option value="lunch">☀️ Lunch</option>
+            <option value="dinner">🌙 Dinner</option>
+            <option value="snacks">🍎 Snacks</option>
+          </select>
+        </div>
+
         <!-- Meal composition list -->
         <div class="composer-items-container">
           <h3>Meal Items</h3>

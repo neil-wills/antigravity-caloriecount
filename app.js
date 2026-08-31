@@ -40,8 +40,17 @@ function lookupFood(name) {
 // --------------------------------------------------------------------------
 // 2. Global State Store & Persistence
 // --------------------------------------------------------------------------
+const DEFAULT_MEAL_RANGES = {
+  breakfastStart: "06:00",
+  breakfastEnd: "10:00",
+  lunchStart: "11:30",
+  lunchEnd: "14:30",
+  dinnerStart: "18:00",
+  dinnerEnd: "21:00"
+};
+
 let state = {
-  profile: null, // { name, age, weight, height, gender, activity, goal, targetCalories, targetProtein, apiKey }
+  profile: null, // { name, age, weight, height, gender, activity, goal, targetCalories, targetProtein, apiKey, mealRanges }
   meals: {},     // Date key YYYY-MM-DD -> { breakfast: [], lunch: [], dinner: [], snacks: [] }
   water: {},     // Date key YYYY-MM-DD -> integer (glasses, max 8)
   currentDate: getTodayDateString(),
@@ -66,6 +75,9 @@ function loadState() {
 
   if (savedProfile) {
     state.profile = JSON.parse(savedProfile);
+    if (state.profile && !state.profile.mealRanges) {
+      state.profile.mealRanges = { ...DEFAULT_MEAL_RANGES };
+    }
     if (savedMeals) state.meals = JSON.parse(savedMeals);
     if (savedWater) state.water = JSON.parse(savedWater);
     return true;
@@ -79,6 +91,33 @@ function saveState() {
     localStorage.setItem('auracal_profile', JSON.stringify(state.profile));
     localStorage.setItem('auracal_meals', JSON.stringify(state.meals));
     localStorage.setItem('auracal_water', JSON.stringify(state.water));
+  }
+}
+
+// Auto-detect meal type based on local time and user ranges
+function detectCurrentMealType() {
+  const d = new Date();
+  const currentHour = d.getHours();
+  const currentMin = d.getMinutes();
+  
+  // Format current local time as HH:MM (matches 24h clock input syntax)
+  const currentHM = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
+  
+  const ranges = (state.profile && state.profile.mealRanges) ? state.profile.mealRanges : DEFAULT_MEAL_RANGES;
+
+  function timeInWindow(timeStr, startStr, endStr) {
+    // String comparisons of HH:MM work perfectly for zero-padded values
+    return timeStr >= startStr && timeStr <= endStr;
+  }
+
+  if (timeInWindow(currentHM, ranges.breakfastStart, ranges.breakfastEnd)) {
+    return 'breakfast';
+  } else if (timeInWindow(currentHM, ranges.lunchStart, ranges.lunchEnd)) {
+    return 'lunch';
+  } else if (timeInWindow(currentHM, ranges.dinnerStart, ranges.dinnerEnd)) {
+    return 'dinner';
+  } else {
+    return 'snacks';
   }
 }
 
@@ -276,7 +315,8 @@ function initOnboarding() {
       rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
       activity, goal, apiKey: '',
       tipsDismissed: false,
-      avatar
+      avatar,
+      mealRanges: { ...DEFAULT_MEAL_RANGES }
     };
 
     const { targetCalories, targetProtein } = calculateNutrientTargets(rawProfile);
@@ -667,6 +707,11 @@ function openComposer(mealType) {
   state.composerItems = [];
   
   document.getElementById('composer-meal-type').textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+  
+  const mealSelect = document.getElementById('composer-meal-select');
+  if (mealSelect) {
+    mealSelect.value = mealType;
+  }
   
   // Clear Manual form inputs
   document.getElementById('manual-food-name').value = '';
@@ -1275,6 +1320,15 @@ function loadSettingsInputs() {
   // Preload settings avatar dropdown
   document.getElementById('settings-avatar-select').value = prof.avatar || '🥑';
 
+  // Preload settings meal time ranges
+  const ranges = prof.mealRanges || DEFAULT_MEAL_RANGES;
+  document.getElementById('settings-breakfast-start').value = ranges.breakfastStart || "06:00";
+  document.getElementById('settings-breakfast-end').value = ranges.breakfastEnd || "10:00";
+  document.getElementById('settings-lunch-start').value = ranges.lunchStart || "11:30";
+  document.getElementById('settings-lunch-end').value = ranges.lunchEnd || "14:30";
+  document.getElementById('settings-dinner-start').value = ranges.dinnerStart || "18:00";
+  document.getElementById('settings-dinner-end').value = ranges.dinnerEnd || "21:00";
+
   const weightTitle = document.getElementById('settings-weight-lbl-title');
   const heightFtIn = document.getElementById('settings-height-row-ftin');
   const heightCm = document.getElementById('settings-height-row-cm');
@@ -1340,12 +1394,22 @@ function handleSaveSettings() {
     heightCm = rawHeightCm;
   }
 
+  const mealRanges = {
+    breakfastStart: document.getElementById('settings-breakfast-start').value,
+    breakfastEnd: document.getElementById('settings-breakfast-end').value,
+    lunchStart: document.getElementById('settings-lunch-start').value,
+    lunchEnd: document.getElementById('settings-lunch-end').value,
+    dinnerStart: document.getElementById('settings-dinner-start').value,
+    dinnerEnd: document.getElementById('settings-dinner-end').value
+  };
+
   const updatedProfile = { 
     ...state.profile, 
     name, age, units,
     weight: weightKg, height: heightCm,
     rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
-    activity, goal, apiKey, avatar
+    activity, goal, apiKey, avatar,
+    mealRanges
   };
 
   const { targetCalories, targetProtein } = calculateNutrientTargets(updatedProfile);
@@ -1557,11 +1621,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Floating button log click handler
+  // Floating button log click handler (auto-detects active meal category)
   const floatBtn = document.getElementById('btn-floating-add');
   if (floatBtn) {
     floatBtn.addEventListener('click', () => {
-      openComposer('breakfast');
+      const activeMeal = detectCurrentMealType();
+      openComposer(activeMeal);
+    });
+  }
+
+  // Composer Modal Category Selector Listener (saves users time if they wish to adjust category)
+  const composerMealSelect = document.getElementById('composer-meal-select');
+  if (composerMealSelect) {
+    composerMealSelect.addEventListener('change', (e) => {
+      const selectedMeal = e.target.value;
+      state.composerMealType = selectedMeal;
+      document.getElementById('composer-meal-type').textContent = selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1);
     });
   }
 
