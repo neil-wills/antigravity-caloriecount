@@ -891,7 +891,7 @@ function handleSaveMeal() {
 // --------------------------------------------------------------------------
 // 9. Vision AI Scanner Modal & Multimodal Client
 // --------------------------------------------------------------------------
-let scannerMode = 'food'; // 'food' or 'scale'
+let scannerMode = 'unified'; // 'unified' or mock overrides
 
 function openScanner(mode) {
   // If the user has a real API Key saved, enforce the daily quota check!
@@ -902,15 +902,13 @@ function openScanner(mode) {
     return;
   }
 
-  scannerMode = mode;
+  scannerMode = mode || 'unified';
   const title = document.getElementById('scanner-modal-title');
-  title.textContent = mode === 'scale' ? 'Scan Scale + Food' : 'Scan Food Only';
+  title.textContent = 'AI Camera Scanner';
 
-  // Toggle bounding target box display depending on scale mode
+  // Toggle bounding target box display (hidden by default for general unified scanning)
   const scaleBox = document.getElementById('scale-target-box');
-  if (mode === 'scale') {
-    scaleBox.classList.remove('hidden');
-  } else {
+  if (scaleBox) {
     scaleBox.classList.add('hidden');
   }
 
@@ -976,9 +974,31 @@ function processVisionAnalysis(base64Data, mimeType) {
 
 // Genuine API Fetch Client
 async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
-  const prompt = scannerMode === 'scale' 
-    ? `Analyze this food scale image. Read the weight display value in grams (this is critical!). Identify the food on the scale. Calculate the calories and protein content based on this weight. Format the response strictly as JSON with this structure: { "name": "Food Name", "weightGrams": 250, "calories": 350, "proteinGrams": 28.5, "scaleWeightDetected": true, "confidence": "high" }. Do not add any markdown markup besides the JSON object.`
-    : `Identify the food items on the plate. Estimate the portions in grams, total calories, and protein (g). Format the response strictly as JSON with this structure: { "name": "Food Name", "weightGrams": 150, "calories": 250, "proteinGrams": 8.0, "scaleWeightDetected": false, "confidence": "medium" }. Do not add any markdown markup besides the JSON object.`;
+  const prompt = `You are a professional nutrition vision assistant.
+Analyze this image. First, determine if the image contains a food weighing scale (digital or analog) displaying a weight value.
+
+If a scale display is detected:
+1. Read the numerical weight display value (assume grams).
+2. Identify the food item currently placed on the scale.
+3. Calculate the calories and protein content based on this weight.
+4. Set "scaleWeightDetected" to true.
+
+If no scale is detected (e.g. it is just a plate of food, raw ingredients, or a meal setup):
+1. Identify all food items visible.
+2. Estimate the portions in grams based on typical sizes and layout.
+3. Calculate total calories and protein content.
+4. Set "scaleWeightDetected" to false.
+
+Format the response strictly as JSON with this structure:
+{
+  "name": "Food Name",
+  "weightGrams": 150,
+  "calories": 250,
+  "proteinGrams": 8.0,
+  "scaleWeightDetected": true/false,
+  "confidence": "high/medium/low"
+}
+Do not add any markdown markup or extra text besides the raw JSON object.`;
 
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
@@ -1713,8 +1733,10 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Scanner triggers
-  document.getElementById('btn-action-scan-scale').addEventListener('click', () => openScanner('scale'));
-  document.getElementById('btn-action-scan-food').addEventListener('click', () => openScanner('food'));
+  const scanUnifiedBtn = document.getElementById('btn-action-scan-unified');
+  if (scanUnifiedBtn) {
+    scanUnifiedBtn.addEventListener('click', () => openScanner('unified'));
+  }
   document.getElementById('btn-close-scanner').addEventListener('click', closeScanner);
   document.getElementById('btn-scanner-cancel').addEventListener('click', closeScanner);
   document.getElementById('btn-scanner-add').addEventListener('click', handleAddScannerResult);
