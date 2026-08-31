@@ -1348,7 +1348,11 @@ async function testApiKey() {
   }
 
   const status = document.getElementById('api-key-status');
+  const errorContainer = document.getElementById('settings-api-error-container');
+  const errorText = document.getElementById('settings-api-error-text');
+  
   status.textContent = 'Testing connection...';
+  if (errorContainer) errorContainer.classList.add('hidden');
   
   // Call small test query to verify API key validity
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
@@ -1364,17 +1368,46 @@ async function testApiKey() {
       alert('Connection Successful! Your Gemini API key is valid.');
       status.textContent = 'Status: Active (Gemini Vision AI Engine Engaged)';
       status.style.color = '#16a34a';
+      if (errorContainer) errorContainer.classList.add('hidden');
     } else {
       const errData = await response.json().catch(() => ({}));
       const message = errData.error?.message || `HTTP ${response.status} ${response.statusText}`;
       throw new Error(message);
     }
   } catch (err) {
-    alert(`Connection Failed: ${err.message}\n\nPlease check your key syntax, ensure Google AI Studio is active for your region, and try again.`);
+    // Show error log visually
+    if (errorContainer && errorText) {
+      errorText.textContent = err.message;
+      errorContainer.classList.remove('hidden');
+    }
+    
+    // Auto-copy to clipboard for user convenience
+    navigator.clipboard.writeText(err.message).catch(() => {});
+    
+    alert(`Connection Failed: ${err.message}\n\n(This error has been copied to your clipboard!)`);
     status.textContent = 'Status: Connection Rejected';
     status.style.color = 'var(--accent-danger)';
   }
 }
+
+// Bind clipboard copy button action inside settings
+document.addEventListener('DOMContentLoaded', () => {
+  const copyErrorBtn = document.getElementById('btn-copy-api-error');
+  if (copyErrorBtn) {
+    copyErrorBtn.addEventListener('click', () => {
+      const errText = document.getElementById('settings-api-error-text').textContent;
+      navigator.clipboard.writeText(errText).then(() => {
+        const originalText = copyErrorBtn.textContent;
+        copyErrorBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyErrorBtn.textContent = originalText;
+        }, 1500);
+      }).catch(e => {
+        console.error('Clipboard copy failed:', e);
+      });
+    });
+  }
+});
 
 // Hard Reset helper
 function handleResetApp() {
