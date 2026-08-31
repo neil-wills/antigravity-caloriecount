@@ -1370,10 +1370,12 @@ async function testApiKey() {
       status.textContent = 'Status: Active (Gemini Vision AI Engine Engaged)';
       status.style.color = '#16a34a';
     } else {
-      throw new Error('Key validation rejected');
+      const errData = await response.json().catch(() => ({}));
+      const message = errData.error?.message || `HTTP ${response.status} ${response.statusText}`;
+      throw new Error(message);
     }
   } catch (err) {
-    alert('Connection Failed. Please confirm key syntax and structure.');
+    alert(`Connection Failed: ${err.message}\n\nPlease check your key syntax, ensure Google AI Studio is active for your region, and try again.`);
     status.textContent = 'Status: Connection Rejected';
     status.style.color = 'var(--accent-danger)';
   }
