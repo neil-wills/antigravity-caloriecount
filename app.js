@@ -157,8 +157,14 @@ function incrementDailyScanCounter() {
 function updateSettingsScanUsage() {
   const usageText = document.getElementById('api-usage-status');
   if (usageText) {
-    const current = getDailyScanCount();
-    usageText.textContent = `Daily AI Usage: ${current} / ${MAX_DAILY_SCANS} scans completed today`;
+    const hasKey = state.profile && state.profile.apiKey && state.profile.apiKey.trim() !== '';
+    if (hasKey) {
+      usageText.classList.remove('hidden');
+      const current = getDailyScanCount();
+      usageText.textContent = `Daily AI Usage: ${current} / ${MAX_DAILY_SCANS} scans completed today`;
+    } else {
+      usageText.classList.add('hidden');
+    }
   }
 }
 
