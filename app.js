@@ -615,10 +615,15 @@ function renderMealsLog() {
       items.forEach((item, index) => {
         const itemRow = document.createElement('div');
         itemRow.className = 'log-item-row';
+        const ingredientsText = (item.ingredients && Array.isArray(item.ingredients) && item.ingredients.length > 0)
+          ? `<span class="log-item-ingredients" style="font-size: 0.72rem; color: var(--accent-teal); font-style: italic; display: block; margin-top: 2px;">🔍 Ingredients: ${item.ingredients.join(', ')}</span>`
+          : '';
+
         itemRow.innerHTML = `
           <div class="log-item-info">
             <span class="log-item-title">${item.name}</span>
             <span class="log-item-subtitle">${item.weightGrams}g ${item.protein ? `| ${item.protein}g protein` : ''}</span>
+            ${ingredientsText}
           </div>
           <div class="log-item-values">
             <span class="log-item-calories">${Math.round(item.calories)} kcal</span>
@@ -785,10 +790,15 @@ function renderComposerItems() {
       row.className = 'log-item-row';
       row.style.borderBottom = '1px solid var(--border-color)';
       row.style.padding = '6px 0';
+      const ingredientsText = (item.ingredients && Array.isArray(item.ingredients) && item.ingredients.length > 0)
+        ? `<span class="log-item-ingredients" style="font-size: 0.72rem; color: var(--accent-teal); font-style: italic; display: block; margin-top: 2px;">🔍 Ingredients: ${item.ingredients.join(', ')}</span>`
+        : '';
+
       row.innerHTML = `
         <div class="log-item-info">
           <span class="log-item-title">${item.name}</span>
           <span class="log-item-subtitle">${item.weightGrams}g</span>
+          ${ingredientsText}
         </div>
         <div class="log-item-values">
           <span class="log-item-calories">${Math.round(item.calories)} kcal</span>
@@ -952,6 +962,7 @@ function setScannerState(stateName) {
   document.getElementById('scanner-state-select').classList.add('hidden');
   document.getElementById('scanner-state-scanning').classList.add('hidden');
   document.getElementById('scanner-state-results').classList.add('hidden');
+  document.getElementById('scanner-state-error').classList.add('hidden');
   document.getElementById('btn-scanner-add').classList.add('hidden');
 
   if (stateName === 'select') {
@@ -961,6 +972,8 @@ function setScannerState(stateName) {
   } else if (stateName === 'results') {
     document.getElementById('scanner-state-results').classList.remove('hidden');
     document.getElementById('btn-scanner-add').classList.remove('hidden');
+  } else if (stateName === 'error') {
+    document.getElementById('scanner-state-error').classList.remove('hidden');
   }
 }
 
@@ -1001,30 +1014,31 @@ function processVisionAnalysis(base64Data, mimeType) {
 // Genuine API Fetch Client
 async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
   const prompt = `You are a professional nutrition vision assistant.
-Analyze this image. First, determine if the image contains a food weighing scale (digital or analog) displaying a weight value.
-
-If a scale display is detected:
-1. Read the numerical weight display value (assume grams).
-2. Identify the food item currently placed on the scale.
-3. Calculate the calories and protein content based on this weight.
-4. Set "scaleWeightDetected" to true.
-
-If no scale is detected (e.g. it is just a plate of food, raw ingredients, or a meal setup):
-1. Identify all food items visible.
-2. Estimate the portions in grams based on typical sizes and layout.
-3. Calculate total calories and protein content.
-4. Set "scaleWeightDetected" to false.
-
-Format the response strictly as JSON with this structure:
+Analyze this image. First, determine if the image contains any food items, ingredients, or a food weighing scale.
+If the image does NOT contain food or ingredients or a scale with food, return a JSON response with:
 {
+  "isFoodDetected": false,
+  "rejectionMessage": "No food items or ingredients could be identified in this image. Please take a clear photo of your food plate or weighing scale."
+}
+
+If food or a scale is detected:
+1. Determine if a food weighing scale display is visible. If so, read the numerical weight (assume grams) and set "scaleWeightDetected" to true.
+2. Identify the food items and ingredients visible.
+3. Estimate their portion weights in grams.
+4. Calculate calories and protein.
+5. Create a list of the specific detected ingredients/items (e.g. ["Greek yogurt", "blueberries", "honey", "chia seeds"]).
+6. Return a JSON response with:
+{
+  "isFoodDetected": true,
   "name": "Food Name",
   "weightGrams": 150,
   "calories": 250,
   "proteinGrams": 8.0,
   "scaleWeightDetected": true/false,
+  "detectedIngredients": ["ingredient 1", "ingredient 2", ...],
   "confidence": "high/medium/low"
 }
-Do not add any markdown markup or extra text besides the raw JSON object.`;
+Format the response strictly as a single JSON object. Do not add any markdown markup or extra text besides the JSON object.`;
 
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
@@ -1064,13 +1078,26 @@ Do not add any markdown markup or extra text besides the raw JSON object.`;
     const textResult = data.candidates[0].content.parts[0].text;
     const parsedData = JSON.parse(textResult);
     
+    // Check if the image contains food or scale display
+    if (parsedData.isFoodDetected === false) {
+      showScannerError("Image Rejected", parsedData.rejectionMessage || "No food or weighing scale could be identified in this image. Please capture a clear photo of your food or ingredients.");
+      return;
+    }
+    
     incrementDailyScanCounter();
     displayScanResults(parsedData);
   } catch (error) {
     console.error('Vision API processing failed:', error);
-    alert('Gemini API call failed. Running mock fallback simulation. Please verify your API Key in Settings.');
-    runMockScanningAnimation(); // Fallback to mock
+    showScannerError("AI Scanner Offline", "We are unable to connect to the Gemini Vision AI service. Please verify your internet connection, API Key in Settings, or try again later.");
   }
+}
+
+function showScannerError(title, msg) {
+  setScannerState('error');
+  const errorTitle = document.getElementById('scanner-error-title');
+  const errorMsg = document.getElementById('scanner-error-msg');
+  if (errorTitle) errorTitle.textContent = title;
+  if (errorMsg) errorMsg.textContent = msg;
 }
 
 // Mock Scanning Simulation with sequential visual text updates
@@ -1145,6 +1172,22 @@ function displayScanResults(result) {
     warningBox.classList.add('hidden');
   }
 
+  // Populate ingredients box if ingredients list is returned
+  const ingredientsBox = document.getElementById('result-ingredients-box');
+  const ingredientsList = document.getElementById('result-ingredients-list');
+  if (ingredientsBox && ingredientsList) {
+    if (result.detectedIngredients && Array.isArray(result.detectedIngredients) && result.detectedIngredients.length > 0) {
+      ingredientsBox.classList.remove('hidden');
+      ingredientsList.textContent = result.detectedIngredients.join(', ');
+      state.activeScanIngredients = result.detectedIngredients;
+    } else {
+      ingredientsBox.classList.add('hidden');
+      state.activeScanIngredients = null;
+    }
+  } else {
+    state.activeScanIngredients = null;
+  }
+
   // Autofill adjustment inputs
   document.getElementById('result-input-name').value = result.name;
   document.getElementById('result-input-weight').value = result.weightGrams;
@@ -1163,7 +1206,13 @@ function handleAddScannerResult() {
     return;
   }
 
-  state.composerItems.push({ name, weightGrams: weight, calories, protein });
+  state.composerItems.push({ 
+    name, 
+    weightGrams: weight, 
+    calories, 
+    protein,
+    ingredients: state.activeScanIngredients || null
+  });
   renderComposerItems();
   closeScanner();
 }
@@ -1177,23 +1226,33 @@ function initScannerTemplates() {
       
       let templateData = {};
       if (type === 'food') {
+        const name = btn.getAttribute('data-name');
+        const ingredients = name.includes('Avocado') 
+          ? ["Sourdough Toast", "Creamy Avocado", "Cherry Tomatoes", "Sesame Seeds"]
+          : ["Fresh Apple"];
         templateData = {
-          name: btn.getAttribute('data-name'),
+          name: name,
           weightGrams: parseFloat(btn.getAttribute('data-weight')),
           calories: parseFloat(btn.getAttribute('data-calories')),
           proteinGrams: parseFloat(btn.getAttribute('data-protein')),
-          scaleWeightDetected: false
+          scaleWeightDetected: false,
+          detectedIngredients: ingredients
         };
       } else {
+        const name = btn.getAttribute('data-name');
+        const ingredients = name.includes('Salmon')
+          ? ["Grilled Salmon Fillet", "Lemon Slices", "Dill Seasoning"]
+          : ["Creamy Peanut Butter"];
         const weight = parseFloat(btn.getAttribute('data-scale'));
         const cal100 = parseFloat(btn.getAttribute('data-cal100'));
         const prot100 = parseFloat(btn.getAttribute('data-protein100'));
         templateData = {
-          name: btn.getAttribute('data-name'),
+          name: name,
           weightGrams: weight,
           calories: Math.round(weight * (cal100 / 100)),
           proteinGrams: parseFloat((weight * (prot100 / 100)).toFixed(1)),
-          scaleWeightDetected: true
+          scaleWeightDetected: true,
+          detectedIngredients: ingredients
         };
       }
 
@@ -1770,6 +1829,14 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-close-scanner').addEventListener('click', closeScanner);
   document.getElementById('btn-scanner-cancel').addEventListener('click', closeScanner);
   document.getElementById('btn-scanner-add').addEventListener('click', handleAddScannerResult);
+
+  const errorRetryBtn = document.getElementById('btn-scanner-error-retry');
+  if (errorRetryBtn) {
+    errorRetryBtn.addEventListener('click', () => {
+      setScannerState('select');
+      document.getElementById('camera-file-input').value = '';
+    });
+  }
 
   // Camera Upload Listener
   document.getElementById('camera-file-input').addEventListener('change', handleImageUpload);

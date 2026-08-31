@@ -753,6 +753,20 @@
           </div>
         </div>
 
+        <!-- Error / Rejection State -->
+        <div id="scanner-state-error" class="scanner-state hidden">
+          <div style="text-align: center; padding: 25px 15px;">
+            <div style="width: 56px; height: 56px; background-color: rgba(239, 68, 68, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px auto;">
+              <span style="font-size: 1.8rem; color: var(--accent-danger);">⚠️</span>
+            </div>
+            <h3 id="scanner-error-title" style="font-size: 1.15rem; font-weight: 800; color: var(--accent-danger); margin-bottom: 8px;">Analysis Failed</h3>
+            <p id="scanner-error-msg" style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.45; max-width: 280px; margin: 0 auto 15px auto;">
+              We couldn't analyze the image. Please verify your connection or check your settings.
+            </p>
+            <button type="button" class="btn btn-secondary-outline" id="btn-scanner-error-retry" style="width: auto; display: inline-block;">Try Again</button>
+          </div>
+        </div>
+
         <!-- Results confirmation State -->
         <div id="scanner-state-results" class="scanner-state hidden">
           <div class="scanning-result-success">
@@ -779,6 +793,12 @@
                 <span class="lbl">Protein</span>
                 <span id="result-protein" class="val">---</span>
               </div>
+            </div>
+
+            <!-- Detected Ingredients/Items List -->
+            <div id="result-ingredients-box" class="hidden" style="margin-top: 15px; padding: 10px 12px; background-color: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.15); border-radius: var(--border-radius-sm); font-size: 0.82rem;">
+              <strong style="color: var(--accent-teal); font-weight: 700;">🔍 Detected Ingredients/Items:</strong>
+              <div id="result-ingredients-list" style="margin-top: 4px; line-height: 1.4; color: var(--text-primary); font-weight: 500;">No extra ingredients logged.</div>
             </div>
 
             <!-- Warning if weight couldn't be read -->
