@@ -2069,7 +2069,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Clear Profile / Start Over (Renamed Reset App button for clarity)
   const resetBtn = document.getElementById('btn-reset-app');
   if (resetBtn) {
-    resetBtn.textContent = 'Reset Profile & Start Over (Cancel)';
+    resetBtn.textContent = 'Reset Profile & Start Over';
     resetBtn.addEventListener('click', handleResetApp);
   }
 
