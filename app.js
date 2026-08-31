@@ -1663,8 +1663,12 @@ function initDatePicker() {
   const nativePicker = document.getElementById('native-date-picker');
   const dateLabel = document.getElementById('display-date-label');
 
-  // Trigger hidden input on button tap
+  // Trigger hidden input on button tap (and route back to meals log if on other panel)
   dateBtn.addEventListener('click', () => {
+    const activeTab = document.querySelector('.nav-tab.active')?.getAttribute('data-tab');
+    if (activeTab !== 'log') {
+      switchTab('log');
+    }
     nativePicker.click();
   });
 
@@ -1879,6 +1883,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (headerSettingsBtn) {
     headerSettingsBtn.addEventListener('click', () => {
       switchTab('settings');
+    });
+  }
+
+  // Header Logo "Home" routing click listener
+  const headerLogoHome = document.getElementById('header-logo-home');
+  if (headerLogoHome) {
+    headerLogoHome.addEventListener('click', () => {
+      switchTab('log');
     });
   }
 
