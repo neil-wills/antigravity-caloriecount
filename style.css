@@ -16,6 +16,7 @@
   --text-primary: #0f172a;
   --text-secondary: #475569;
   --text-muted: #64748b;
+  --text-shadow-glow: 0 1px 8px rgba(255, 255, 255, 0.95), 0 0 2px rgba(255, 255, 255, 0.8);
   
   /* Semantic Accent Colors */
   --accent-teal: #0d9488;      /* Primary Brand / Health & Protein */
@@ -54,6 +55,7 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(13, 148, 136, 0.35);
+  --text-shadow-glow: 0 1px 8px rgba(11, 15, 25, 0.95), 0 0 2px rgba(11, 15, 25, 0.8);
 }
 
 /* --------------------------------------------------------------------------
@@ -68,16 +70,38 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-app);
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color var(--transition-normal), color var(--transition-normal);
+  transition: color var(--transition-normal);
   overflow-x: hidden;
   height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  background: transparent;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: linear-gradient(rgba(241, 245, 249, 0.55), rgba(241, 245, 249, 0.55)), url('background.jpg');
+  background-size: cover;
+  background-position: center;
+  z-index: -1;
+  filter: contrast(1.22) saturate(1.42) brightness(1.02);
+  pointer-events: none;
+  transition: filter var(--transition-normal);
+}
+
+[data-theme="dark"] body::before {
+  background-image: linear-gradient(rgba(11, 15, 25, 0.68), rgba(11, 15, 25, 0.68)), url('background.jpg');
+  filter: contrast(1.25) saturate(1.50) brightness(0.95);
 }
 
 /* Accessible Tap Target Guideline: Minimum clickable size */
@@ -102,30 +126,8 @@ button, select, input {
   display: flex;
   flex-direction: column;
   position: relative;
-  background-color: var(--bg-app);
+  background: transparent;
   overflow: hidden;
-}
-
-.app-screen::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-image: linear-gradient(rgba(241, 245, 249, 0.12), rgba(241, 245, 249, 0.12)), url('background.jpg');
-  background-size: cover;
-  background-position: center;
-  z-index: 0;
-  /* Increase contrast, saturation, and brightness of the culinary background to make it vibrant and energetic */
-  filter: contrast(1.22) saturate(1.42) brightness(1.02);
-  pointer-events: none;
-  transition: filter var(--transition-normal);
-}
-
-[data-theme="dark"] .app-screen::before {
-  background-image: linear-gradient(rgba(11, 15, 25, 0.35), rgba(11, 15, 25, 0.35)), url('background.jpg');
-  filter: contrast(1.25) saturate(1.50) brightness(0.95);
 }
 
 /* Header with Glassmorphism blur */
@@ -506,6 +508,7 @@ button, select, input {
   font-weight: 700;
   margin-bottom: 12px;
   color: var(--text-secondary);
+  text-shadow: var(--text-shadow-glow);
 }
 
 .shortcut-buttons-grid {
@@ -580,11 +583,13 @@ button, select, input {
   font-size: 1.6rem;
   font-weight: 800;
   letter-spacing: -0.5px;
+  text-shadow: var(--text-shadow-glow);
 }
 
 .subtitle-label {
   font-size: 0.9rem;
   color: var(--text-secondary);
+  text-shadow: var(--text-shadow-glow);
 }
 
 /* Grouped Meals list */
@@ -865,11 +870,13 @@ button, select, input {
   font-weight: 800;
   letter-spacing: -0.5px;
   margin-bottom: 6px;
+  text-shadow: var(--text-shadow-glow);
 }
 
 .onboarding-header p {
   font-size: 0.9rem;
   color: var(--text-secondary);
+  text-shadow: var(--text-shadow-glow);
 }
 
 .form-step {
