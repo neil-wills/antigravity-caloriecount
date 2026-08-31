@@ -598,7 +598,10 @@
   <div id="modal-composer" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>Compose <span id="composer-meal-type">Breakfast</span></h2>
+        <h2 style="display: flex; align-items: center; gap: 8px;">
+          <span id="composer-meal-icon" style="font-size: 1.4rem; line-height: 1;">🌅</span>
+          Compose <span id="composer-meal-type">Breakfast</span>
+        </h2>
         <button class="btn-close-modal" id="btn-close-composer" aria-label="Close modal">&times;</button>
       </div>
 
@@ -691,7 +694,12 @@
   <div id="modal-scanner" class="modal-backdrop hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h2 id="scanner-modal-title">Vision AI Scanner</h2>
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 id="scanner-modal-title">AI Camera Scanner</h2>
+          <span id="scanner-active-meal-badge" style="font-size: 0.76rem; font-weight: 700; color: var(--accent-teal); display: flex; align-items: center; gap: 4px; text-shadow: none;">
+            <span id="scanner-active-meal-icon">🌅</span> Scanning for: <span id="scanner-active-meal-name">Breakfast</span>
+          </span>
+        </div>
         <button class="btn-close-modal" id="btn-close-scanner" aria-label="Close scanner">&times;</button>
       </div>
 

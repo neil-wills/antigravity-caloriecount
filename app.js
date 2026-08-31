@@ -121,6 +121,17 @@ function detectCurrentMealType() {
   }
 }
 
+// Utility to get graphic icon representation of a meal period
+function getMealPeriodIcon(mealType) {
+  const icons = {
+    breakfast: '🌅',
+    lunch: '☀️',
+    dinner: '🌙',
+    snacks: '🍎'
+  };
+  return icons[mealType.toLowerCase()] || '🍽️';
+}
+
 // Scan Quota Limits Management (Limits family users from exhausting shared Gemini API key)
 const MAX_DAILY_SCANS = 20;
 
@@ -737,6 +748,10 @@ function openComposer(mealType) {
   state.composerItems = [];
   
   document.getElementById('composer-meal-type').textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+  const composerIcon = document.getElementById('composer-meal-icon');
+  if (composerIcon) {
+    composerIcon.textContent = getMealPeriodIcon(mealType);
+  }
   
   const mealSelect = document.getElementById('composer-meal-select');
   if (mealSelect) {
@@ -905,6 +920,17 @@ function openScanner(mode) {
   scannerMode = mode || 'unified';
   const title = document.getElementById('scanner-modal-title');
   title.textContent = 'AI Camera Scanner';
+
+  // Set scanning active meal header context
+  const activeMeal = state.composerMealType || 'breakfast';
+  const scannerIcon = document.getElementById('scanner-active-meal-icon');
+  const scannerName = document.getElementById('scanner-active-meal-name');
+  if (scannerIcon) {
+    scannerIcon.textContent = getMealPeriodIcon(activeMeal);
+  }
+  if (scannerName) {
+    scannerName.textContent = activeMeal.charAt(0).toUpperCase() + activeMeal.slice(1);
+  }
 
   // Toggle bounding target box display (hidden by default for general unified scanning)
   const scaleBox = document.getElementById('scale-target-box');
@@ -1697,6 +1723,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const selectedMeal = e.target.value;
       state.composerMealType = selectedMeal;
       document.getElementById('composer-meal-type').textContent = selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1);
+      const composerIcon = document.getElementById('composer-meal-icon');
+      if (composerIcon) {
+        composerIcon.textContent = getMealPeriodIcon(selectedMeal);
+      }
     });
   }
 
