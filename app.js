@@ -123,37 +123,46 @@ function calculateNutrientTargets(profile) {
 // --------------------------------------------------------------------------
 // 3. UI State Management and Router
 // --------------------------------------------------------------------------
-function initRouter() {
+function switchTab(targetTab) {
   const tabs = document.querySelectorAll('.nav-tab');
   const panels = document.querySelectorAll('.app-panel');
 
+  // Update Tab Navigation Active State
+  tabs.forEach(t => {
+    if (t.getAttribute('data-tab') === targetTab) {
+      t.classList.add('active');
+    } else {
+      t.classList.remove('active');
+    }
+  });
+
+  // Show Selected Panel, Hide Others
+  panels.forEach(panel => {
+    if (panel.id === `panel-${targetTab}`) {
+      panel.classList.remove('hidden');
+    } else {
+      panel.classList.add('hidden');
+    }
+  });
+
+  // Special Trigger on panel load
+  if (targetTab === 'dashboard') {
+    renderDashboard();
+  } else if (targetTab === 'log') {
+    renderMealsLog();
+  } else if (targetTab === 'history') {
+    renderHistoryChart();
+  } else if (targetTab === 'settings') {
+    loadSettingsInputs();
+  }
+}
+
+function initRouter() {
+  const tabs = document.querySelectorAll('.nav-tab');
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       const targetTab = tab.getAttribute('data-tab');
-      
-      // Update Tab Navigation Active State
-      tabs.forEach(t => t.classList.remove('active'));
-      tab.classList.add('active');
-
-      // Show Selected Panel, Hide Others
-      panels.forEach(panel => {
-        if (panel.id === `panel-${targetTab}`) {
-          panel.classList.remove('hidden');
-        } else {
-          panel.classList.add('hidden');
-        }
-      });
-
-      // Special Trigger on panel load
-      if (targetTab === 'dashboard') {
-        renderDashboard();
-      } else if (targetTab === 'log') {
-        renderMealsLog();
-      } else if (targetTab === 'history') {
-        renderHistoryChart();
-      } else if (targetTab === 'settings') {
-        loadSettingsInputs();
-      }
+      switchTab(targetTab);
     });
   });
 }
@@ -1468,8 +1477,10 @@ function initDatePicker() {
     }
 
     // Refresh Active Section Panels
-    const activeTab = document.querySelector('.nav-tab.active').getAttribute('data-tab');
-    if (activeTab === 'dashboard') {
+    const activeTab = document.querySelector('.nav-tab.active')?.getAttribute('data-tab');
+    if (activeTab === 'settings') {
+      switchTab('log');
+    } else if (activeTab === 'dashboard') {
       renderDashboard();
     } else if (activeTab === 'log') {
       renderMealsLog();
@@ -1633,12 +1644,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const headerSettingsBtn = document.getElementById('btn-header-settings');
   if (headerSettingsBtn) {
     headerSettingsBtn.addEventListener('click', () => {
-      // Navigate to settings tab
-      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-      document.querySelector('.nav-tab[data-tab="settings"]').classList.add('active');
-      document.querySelectorAll('.app-panel').forEach(p => p.classList.add('hidden'));
-      document.getElementById('panel-settings').classList.remove('hidden');
-      loadSettingsInputs();
+      switchTab('settings');
+    });
+  }
+
+  // Settings Cancel and Go Back action button
+  const cancelSettingsBtn = document.getElementById('btn-cancel-settings');
+  if (cancelSettingsBtn) {
+    cancelSettingsBtn.addEventListener('click', () => {
+      switchTab('log');
     });
   }
 
