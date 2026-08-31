@@ -1277,29 +1277,6 @@ function handleImageUpload(e) {
 }
 
 // Routing: Gemini API vs Mock Estimation
-// Default Fallback when image contains non-food or unidentifiable items
-const DEFAULT_GREEK_YOGURT_SALAD_BOWL = {
-  isFoodDetected: true,
-  scaleWeightDetected: false,
-  confidence: "low",
-  items: [
-    {
-      name: "Greek Yogurt Salad Bowl",
-      weightGrams: 220,
-      calories: 290,
-      proteinGrams: 14.5,
-      detectedIngredients: ["Greek Yogurt", "Mixed Salad Greens", "Cucumber Slices", "Olive Oil drizzle", "Herbs"]
-    }
-  ]
-};
-
-function normalizeOrFallbackFoodResult(parsedData) {
-  if (!parsedData || parsedData.isFoodDetected === false || (!parsedData.items && !parsedData.name)) {
-    return DEFAULT_GREEK_YOGURT_SALAD_BOWL;
-  }
-  return parsedData;
-}
-
 // Clinical Vision Prompt accounting for hidden cooking fats & multi-item separation
 const CLINICAL_VISION_PROMPT = `You are a clinical nutrition and computer vision dietitian.
 Analyze this food/scale photo with high scientific rigor.
@@ -1312,23 +1289,7 @@ Photo-based calorie tracking systematically underestimates energy by 25-35% (app
 4. Estimate realistic portion weights in grams, calculate accurate calories (including cooking fats), and protein in grams.
 5. List all identified ingredients for each item in "detectedIngredients".
 
-If the image does NOT clearly contain identifiable food, ingredients, or a food weighing scale, do NOT reject the image; return strictly:
-{
-  "isFoodDetected": true,
-  "scaleWeightDetected": false,
-  "confidence": "low",
-  "items": [
-    {
-      "name": "Greek Yogurt Salad Bowl",
-      "weightGrams": 220,
-      "calories": 290,
-      "proteinGrams": 14.5,
-      "detectedIngredients": ["Greek Yogurt", "Mixed Salad Greens", "Cucumber Slices", "Olive Oil drizzle", "Herbs"]
-    }
-  ]
-}
-
-If food or scale is detected, return strictly:
+Return strictly a JSON object formatted as:
 {
   "isFoodDetected": true,
   "scaleWeightDetected": true/false,
@@ -1393,16 +1354,13 @@ async function callServerlessVisionAPI(base64Data, mimeType) {
 
     const data = await response.json();
     const textResult = data.candidates[0].content.parts[0].text;
-    let parsedData = JSON.parse(textResult);
-
-    parsedData = normalizeOrFallbackFoodResult(parsedData);
+    const parsedData = JSON.parse(textResult);
 
     incrementDailyScanCounter();
     displayScanResults(parsedData);
   } catch (error) {
-    console.error('Serverless vision API fallback to Greek Yogurt Bowl:', error);
-    // Fallback to Greek Yogurt Salad Bowl on connection error
-    displayScanResults(DEFAULT_GREEK_YOGURT_SALAD_BOWL);
+    console.error('Serverless vision API failed:', error);
+    showScannerError("AI Scanner Offline", "We are unable to connect to the Vision AI service. Please verify your connection or try again later.");
   }
 }
 
@@ -1444,16 +1402,13 @@ async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
 
     const data = await response.json();
     const textResult = data.candidates[0].content.parts[0].text;
-    let parsedData = JSON.parse(textResult);
-    
-    parsedData = normalizeOrFallbackFoodResult(parsedData);
+    const parsedData = JSON.parse(textResult);
     
     incrementDailyScanCounter();
     displayScanResults(parsedData);
   } catch (error) {
-    console.error('Vision API fallback to Greek Yogurt Bowl:', error);
-    // Fallback to Greek Yogurt Salad Bowl on error
-    displayScanResults(DEFAULT_GREEK_YOGURT_SALAD_BOWL);
+    console.error('Vision API processing failed:', error);
+    showScannerError("AI Scanner Offline", "We are unable to connect to the Gemini Vision AI service. Please verify your internet connection, API Key in Settings, or try again later.");
   }
 }
 
