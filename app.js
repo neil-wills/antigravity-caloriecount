@@ -686,29 +686,63 @@ function renderWaterGlasses() {
   const dateKey = state.currentDate;
   const glassCount = state.water[dateKey] || 0;
   const container = document.getElementById('water-glasses-container');
-  container.innerHTML = '';
-
-  for (let i = 1; i <= 8; i++) {
-    const btn = document.createElement('button');
-    btn.className = `glass-btn ${i <= glassCount ? 'active' : ''}`;
-    btn.innerHTML = '🥛';
-    btn.setAttribute('aria-label', `Water glass ${i}`);
-    
-    btn.addEventListener('click', () => {
-      // Toggle glass count logic
-      if (state.water[dateKey] === i) {
-        state.water[dateKey] = i - 1;
-      } else {
-        state.water[dateKey] = i;
-      }
-      saveState();
-      renderWaterGlasses();
-      document.getElementById('display-water-val').textContent = `${state.water[dateKey]} / 8 glasses`;
-    });
-    container.appendChild(btn);
+  if (container) {
+    container.innerHTML = '';
+    for (let i = 1; i <= 8; i++) {
+      const btn = document.createElement('button');
+      btn.className = `glass-btn ${i <= glassCount ? 'active' : ''}`;
+      btn.innerHTML = '🥛';
+      btn.setAttribute('aria-label', `Water glass ${i}`);
+      
+      btn.addEventListener('click', () => {
+        // Toggle glass count logic
+        if (state.water[dateKey] === i) {
+          state.water[dateKey] = i - 1;
+        } else {
+          state.water[dateKey] = i;
+        }
+        saveState();
+        renderWaterGlasses();
+      });
+      container.appendChild(btn);
+    }
   }
 
-  document.getElementById('display-water-val').textContent = `${glassCount} / 8 glasses`;
+  const displayWater = document.getElementById('display-water-val');
+  if (displayWater) {
+    displayWater.textContent = `${glassCount} / 8 glasses`;
+  }
+  
+  const quickWaterLabel = document.getElementById('quick-water-label');
+  if (quickWaterLabel) {
+    quickWaterLabel.textContent = `+1 glass (${glassCount}/8)`;
+  }
+  
+  const chooserWaterStatus = document.getElementById('chooser-water-status');
+  if (chooserWaterStatus) {
+    chooserWaterStatus.textContent = `${glassCount}/8 glasses logged today`;
+  }
+}
+
+function logWaterIncrement(amount = 1) {
+  const dateKey = state.currentDate;
+  if (state.water[dateKey] === undefined) {
+    state.water[dateKey] = 0;
+  }
+  state.water[dateKey] = Math.max(0, (state.water[dateKey] || 0) + amount);
+  saveState();
+  renderWaterGlasses();
+}
+
+function openQuickEntryChooser() {
+  renderWaterGlasses();
+  const chooser = document.getElementById('modal-quick-entry-chooser');
+  if (chooser) chooser.classList.remove('hidden');
+}
+
+function closeQuickEntryChooser() {
+  const chooser = document.getElementById('modal-quick-entry-chooser');
+  if (chooser) chooser.classList.add('hidden');
 }
 
 function getActivityEmoji(name) {
@@ -2538,20 +2572,58 @@ document.addEventListener('DOMContentLoaded', () => {
     initOnboarding();
   }
 
-  // Register Shortcuts click listeners on Dashboard
-  document.querySelectorAll('.btn-shortcut').forEach(btn => {
+  // Register Shortcuts click listeners on Dashboard for Meals
+  document.querySelectorAll('.btn-shortcut[data-meal]').forEach(btn => {
     btn.addEventListener('click', () => {
       const meal = btn.getAttribute('data-meal');
       openComposer(meal);
     });
   });
 
-  // Floating button log click handler (auto-detects active meal category)
+  // Fast Actions: Exercise & Water quick buttons on Dashboard
+  const quickLogExerciseBtn = document.getElementById('btn-quick-log-exercise');
+  if (quickLogExerciseBtn) {
+    quickLogExerciseBtn.addEventListener('click', openExerciseModal);
+  }
+
+  const quickLogWaterBtn = document.getElementById('btn-quick-log-water');
+  if (quickLogWaterBtn) {
+    quickLogWaterBtn.addEventListener('click', () => {
+      logWaterIncrement(1);
+    });
+  }
+
+  // Floating button: Opens Quick Entry Chooser
   const floatBtn = document.getElementById('btn-floating-add');
   if (floatBtn) {
-    floatBtn.addEventListener('click', () => {
+    floatBtn.addEventListener('click', openQuickEntryChooser);
+  }
+
+  // Quick Entry Chooser Modal actions
+  const closeQuickEntryBtn = document.getElementById('btn-close-quick-entry');
+  if (closeQuickEntryBtn) {
+    closeQuickEntryBtn.addEventListener('click', closeQuickEntryChooser);
+  }
+  const btnChooserMeal = document.getElementById('btn-chooser-meal');
+  if (btnChooserMeal) {
+    btnChooserMeal.addEventListener('click', () => {
+      closeQuickEntryChooser();
       const activeMeal = detectCurrentMealType();
       openComposer(activeMeal);
+    });
+  }
+  const btnChooserExercise = document.getElementById('btn-chooser-exercise');
+  if (btnChooserExercise) {
+    btnChooserExercise.addEventListener('click', () => {
+      closeQuickEntryChooser();
+      openExerciseModal();
+    });
+  }
+  const btnChooserWater = document.getElementById('btn-chooser-water');
+  if (btnChooserWater) {
+    btnChooserWater.addEventListener('click', () => {
+      logWaterIncrement(1);
+      closeQuickEntryChooser();
     });
   }
 

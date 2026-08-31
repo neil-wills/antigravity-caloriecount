@@ -290,9 +290,14 @@
           </div>
         </div>
 
-        <!-- Fast Actions Row: Log Meal directly under Daily Target & Calorie Burn -->
+        <!-- Fast Actions Row: Quick Log directly under Daily Target & Calorie Burn -->
         <div class="dashboard-shortcuts">
-          <h3>Log Meal for <span id="dashboard-meal-period">Today</span></h3>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 0.95rem; font-weight: 700;">Quick Log for <span id="dashboard-meal-period">Today</span></h3>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Meal • Exercise • Water</span>
+          </div>
+
+          <!-- Row 1: Meals -->
           <div class="shortcut-buttons-grid">
             <button class="btn-shortcut" data-meal="breakfast">
               <span class="shortcut-icon">
@@ -317,6 +322,25 @@
                 <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5C7.5 20.5 4.5 17 4.5 12.8C4.5 9.5 6.8 7.5 9.2 7.5C10.6 7.5 11.5 8.3 12 8.3C12.5 8.3 13.4 7.5 14.8 7.5C17.2 7.5 19.5 9.5 19.5 12.8C19.5 17 16.5 20.5 12 20.5Z" fill="currentColor" fill-opacity="0.15"/><path d="M12 7.5V3.8" stroke-width="2"/><path d="M12 3.8C14 2 17 2.8 17 2.8C17 2.8 17 5.5 15 6.5" stroke-width="1.6" fill="currentColor" fill-opacity="0.3"/></svg>
               </span>
               <span>Snacks</span>
+            </button>
+          </div>
+
+          <!-- Row 2: Exercise and Hydration Fast Actions -->
+          <div class="quick-log-row" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px;">
+            <button type="button" class="btn-shortcut btn-quick-action" id="btn-quick-log-exercise" style="flex-direction: row; gap: 10px; padding: 10px 14px; background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.3); text-align: left;">
+              <span style="font-size: 1.4rem; line-height: 1;">🏃‍♂️</span>
+              <div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: #9333ea;">+ Log Exercise</div>
+                <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 500;">Burn bonus calories</span>
+              </div>
+            </button>
+
+            <button type="button" class="btn-shortcut btn-quick-action" id="btn-quick-log-water" style="flex-direction: row; gap: 10px; padding: 10px 14px; background: rgba(14, 165, 233, 0.08); border-color: rgba(14, 165, 233, 0.3); text-align: left;">
+              <span style="font-size: 1.4rem; line-height: 1;">💧</span>
+              <div>
+                <div style="font-size: 0.85rem; font-weight: 700; color: #0284c7;">+ Add Water</div>
+                <span style="font-size: 0.72rem; color: var(--text-secondary); font-weight: 500;" id="quick-water-label">+1 glass (0/8)</span>
+              </div>
             </button>
           </div>
         </div>
@@ -1030,6 +1054,44 @@
       <div class="modal-footer" style="display: flex; justify-content: space-between; gap: 10px;">
         <button type="button" class="btn btn-secondary-outline" id="btn-modal-close-activities" style="flex: 1;">Close</button>
         <button type="button" class="btn btn-primary" id="btn-modal-add-another-activity" style="flex: 1;">+ Log Activity</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: QUICK ENTRY CHOOSER ================= -->
+  <div id="modal-quick-entry-chooser" class="modal-backdrop hidden">
+    <div class="modal-card" style="max-width: 380px;">
+      <div class="modal-header">
+        <h2 style="margin: 0; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+          <span>⚡</span> Quick Add Entry
+        </h2>
+        <button class="btn-close-modal" id="btn-close-quick-entry" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 10px; padding: 16px;">
+        <button type="button" class="btn-shortcut btn-quick-action" id="btn-chooser-meal" style="flex-direction: row; gap: 14px; padding: 14px; justify-content: flex-start; text-align: left; background: var(--bg-card);">
+          <span style="font-size: 1.6rem;">🍽️</span>
+          <div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Log a Meal / Food Item</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Breakfast, Lunch, Dinner, or Snacks</div>
+          </div>
+        </button>
+
+        <button type="button" class="btn-shortcut btn-quick-action" id="btn-chooser-exercise" style="flex-direction: row; gap: 14px; padding: 14px; justify-content: flex-start; text-align: left; background: rgba(168, 85, 247, 0.08); border-color: rgba(168, 85, 247, 0.3);">
+          <span style="font-size: 1.6rem;">🏃‍♂️</span>
+          <div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #9333ea;">Log Workout / Activity</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Walking, Running, Cycling, Strength Training</div>
+          </div>
+        </button>
+
+        <button type="button" class="btn-shortcut btn-quick-action" id="btn-chooser-water" style="flex-direction: row; gap: 14px; padding: 14px; justify-content: flex-start; text-align: left; background: rgba(14, 165, 233, 0.08); border-color: rgba(14, 165, 233, 0.3);">
+          <span style="font-size: 1.6rem;">💧</span>
+          <div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #0284c7;">Log Water Intake (+1 Glass)</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);" id="chooser-water-status">Quick add hydration to your daily goal</div>
+          </div>
+        </button>
       </div>
     </div>
   </div>

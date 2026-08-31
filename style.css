@@ -587,6 +587,19 @@ button, select, input {
   font-weight: 600;
 }
 
+.btn-quick-action {
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+}
+
+.btn-quick-action:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-quick-action:active {
+  transform: scale(0.97);
+}
+
 #meal-group-breakfast .meal-emoji { color: #f59e0b; }
 #meal-group-lunch .meal-emoji { color: #10b981; }
 #meal-group-dinner .meal-emoji { color: #8b5cf6; }
