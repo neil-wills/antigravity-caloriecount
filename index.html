@@ -264,7 +264,7 @@
           </div>
 
           <!-- Hydration Card -->
-          <div class="summary-card nutrient-card">
+          <div class="summary-card nutrient-card" id="card-dashboard-hydration">
             <div class="nutrient-card-header">
               <h3>Hydration</h3>
               <span id="display-water-val" class="nutrient-val">0 / 8 glasses</span>
@@ -273,6 +273,18 @@
               <div class="water-glasses-row" id="water-glasses-container">
                 <!-- Water glass icons injected dynamically -->
               </div>
+            </div>
+          </div>
+
+          <!-- Exercise Summary Card -->
+          <div class="summary-card nutrient-card" id="card-dashboard-exercise">
+            <div class="nutrient-card-header">
+              <h3>Exercise</h3>
+              <span id="display-exercise-val" class="nutrient-val">0 kcal burned</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
+              <span id="display-exercise-summary" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">No workouts logged</span>
+              <button type="button" class="btn btn-secondary-outline btn-nav-small" id="btn-dashboard-add-exercise" style="width: auto; padding: 4px 10px; font-size: 0.76rem; border-radius: var(--border-radius-sm);">+ Log</button>
             </div>
           </div>
         </div>
@@ -321,6 +333,30 @@
 
         <div class="meals-log-container" id="meals-log-list">
           <!-- Dynamically generated logs grouped by Breakfast, Lunch, Dinner, Snacks -->
+        </div>
+
+        <!-- Exercise Log Card inside Logs tab -->
+        <div class="meal-group-card" id="card-log-exercise" style="margin-top: 15px;">
+          <div class="meal-group-header" id="header-log-exercise" style="cursor: pointer;">
+            <div class="meal-title-block">
+              <span class="meal-emoji" style="display: flex; align-items: center;">🏃‍♂️</span>
+              <span class="meal-name">Exercise &amp; Workouts</span>
+            </div>
+            <div class="meal-group-totals">
+              <span class="meal-total-kcal" id="log-exercise-total-kcal">0 kcal</span>
+              <span class="meal-total-prot" id="log-exercise-total-time">0 mins</span>
+              <svg viewBox="0 0 24 24" class="chevron-icon"><path fill="currentColor" d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6l-6-6l1.41-1.42Z"/></svg>
+            </div>
+          </div>
+          <div class="meal-items-detail-list hidden" id="list-log-exercise">
+            <!-- Exercised items list detailed view -->
+            <div id="exercise-items-list-detail" style="display: flex; flex-direction: column; gap: 8px;">
+              <p class="empty-list-placeholder">No exercise logged yet.</p>
+            </div>
+            <div style="padding: 10px; text-align: center; border-top: 1px dashed var(--border-color); margin-top: 10px;">
+              <button type="button" class="btn btn-secondary-outline" id="btn-log-add-exercise" style="width: auto; display: inline-block; font-size: 0.82rem; padding: 5px 12px; border-radius: var(--border-radius-sm);">+ Add Exercise Item</button>
+            </div>
+          </div>
         </div>
 
         <!-- Add Button -->
@@ -531,6 +567,37 @@
             <p style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.35; margin: 4px 0 0 0; font-weight: 500;">
               💡 <strong>Note on Snacks</strong>: Any time falling outside these configured windows (e.g. mid-morning, afternoon, or late night) will automatically default to the <strong>Snacks</strong> category.
             </p>
+
+          </div>
+        </div>
+
+        <!-- Optional Trackers Card -->
+        <div class="summary-card settings-card">
+          <h3>Optional Trackers</h3>
+          <p class="card-caption">Toggle additional metrics to personalize what you track on your dashboard and logs.</p>
+          <div class="settings-list">
+            
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>💦 Hydration Tracking</strong>
+                <span>Log water intake and glass counts</span>
+              </div>
+              <label class="switch-toggle-label">
+                <input type="checkbox" id="settings-toggle-hydration" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+
+            <div class="settings-item">
+              <div class="settings-label">
+                <strong>🏃‍♂️ Exercise Log</strong>
+                <span>Record workouts and calories burned</span>
+              </div>
+              <label class="switch-toggle-label">
+                <input type="checkbox" id="settings-toggle-exercise" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
 
           </div>
         </div>
@@ -879,6 +946,42 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="btn-edit-cancel">Cancel</button>
         <button type="submit" form="form-edit-item" class="btn btn-primary" id="btn-edit-save">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: EXERCISE LOGGER ================= -->
+  <div id="modal-exercise" class="modal-backdrop hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem; line-height: 1;">🏃‍♂️</span>
+          Log Exercise
+        </h2>
+        <button class="btn-close-modal" id="btn-close-exercise" aria-label="Close modal">&times;</button>
+      </div>
+
+      <form id="form-exercise" class="modal-body">
+        <div class="input-group">
+          <label for="exercise-input-name">Workout / Activity Name</label>
+          <input type="text" id="exercise-input-name" placeholder="e.g. Walking, Running, Cycling, Strength Training" required class="input-text-full">
+        </div>
+
+        <div class="input-row">
+          <div class="input-group">
+            <label for="exercise-input-duration">Duration (minutes)</label>
+            <input type="number" id="exercise-input-duration" placeholder="e.g. 30" required class="input-text-full">
+          </div>
+          <div class="input-group">
+            <label for="exercise-input-calories">Est. Calories Burned (kcal)</label>
+            <input type="number" id="exercise-input-calories" placeholder="e.g. 250" required class="input-text-full">
+          </div>
+        </div>
+      </form>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="btn-exercise-cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="btn-exercise-save">Save Workout</button>
       </div>
     </div>
   </div>

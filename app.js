@@ -50,9 +50,10 @@ const DEFAULT_MEAL_RANGES = {
 };
 
 let state = {
-  profile: null, // { name, age, weight, height, gender, activity, goal, targetCalories, targetProtein, apiKey, mealRanges }
+  profile: null, // { name, age, weight, height, gender, activity, goal, targetCalories, targetProtein, apiKey, mealRanges, showHydration, showExercise }
   meals: {},     // Date key YYYY-MM-DD -> { breakfast: [], lunch: [], dinner: [], snacks: [] }
   water: {},     // Date key YYYY-MM-DD -> integer (glasses, max 8)
+  exercise: {},  // Date key YYYY-MM-DD -> [{ name, duration, caloriesBurned }]
   currentDate: getTodayDateString(),
   composerMealType: 'breakfast',
   composerItems: []
@@ -72,6 +73,7 @@ function loadState() {
   const savedProfile = localStorage.getItem('auracal_profile');
   const savedMeals = localStorage.getItem('auracal_meals');
   const savedWater = localStorage.getItem('auracal_water');
+  const savedExercise = localStorage.getItem('auracal_exercise');
 
   if (savedProfile) {
     state.profile = JSON.parse(savedProfile);
@@ -80,6 +82,7 @@ function loadState() {
     }
     if (savedMeals) state.meals = JSON.parse(savedMeals);
     if (savedWater) state.water = JSON.parse(savedWater);
+    if (savedExercise) state.exercise = JSON.parse(savedExercise);
     return true;
   }
   return false;
@@ -91,6 +94,7 @@ function saveState() {
     localStorage.setItem('auracal_profile', JSON.stringify(state.profile));
     localStorage.setItem('auracal_meals', JSON.stringify(state.meals));
     localStorage.setItem('auracal_water', JSON.stringify(state.water));
+    localStorage.setItem('auracal_exercise', JSON.stringify(state.exercise));
   }
 }
 
@@ -168,6 +172,31 @@ function updateSettingsScanUsage() {
   }
 }
 
+// Applies conditional visibility on trackers based on user settings
+function applyTrackerVisibility() {
+  const showHydration = !state.profile || state.profile.showHydration !== false;
+  const showExercise = !state.profile || state.profile.showExercise !== false;
+
+  // Toggle Hydration Visibility
+  const hydrationCard = document.getElementById('card-dashboard-hydration');
+  if (hydrationCard) {
+    if (showHydration) hydrationCard.classList.remove('hidden');
+    else hydrationCard.classList.add('hidden');
+  }
+
+  // Toggle Exercise Visibility
+  const exerciseDashboardCard = document.getElementById('card-dashboard-exercise');
+  if (exerciseDashboardCard) {
+    if (showExercise) exerciseDashboardCard.classList.remove('hidden');
+    else exerciseDashboardCard.classList.add('hidden');
+  }
+  const exerciseLogCard = document.getElementById('card-log-exercise');
+  if (exerciseLogCard) {
+    if (showExercise) exerciseLogCard.classList.remove('hidden');
+    else exerciseLogCard.classList.add('hidden');
+  }
+}
+
 // Recalculate Mifflin-St Jeor Targets
 // Men: BMR = 10 * weight (kg) + 6.25 * height (cm) - 5 * age (y) + 5
 // Women: BMR = 10 * weight (kg) + 6.25 * height (cm) - 5 * age (y) - 161
@@ -210,6 +239,7 @@ function calculateNutrientTargets(profile) {
 // 3. UI State Management and Router
 // --------------------------------------------------------------------------
 function switchTab(targetTab) {
+  applyTrackerVisibility();
   const tabs = document.querySelectorAll('.nav-tab');
   const panels = document.querySelectorAll('.app-panel');
 
@@ -363,7 +393,9 @@ function initOnboarding() {
       activity, goal, apiKey: '',
       tipsDismissed: false,
       avatar,
-      mealRanges: { ...DEFAULT_MEAL_RANGES }
+      mealRanges: { ...DEFAULT_MEAL_RANGES },
+      showHydration: true,
+      showExercise: true
     };
 
     const { targetCalories, targetProtein } = calculateNutrientTargets(rawProfile);
@@ -517,6 +549,31 @@ function renderDashboard() {
   // 5. Render water glass hydration tracker
   renderWaterGlasses();
 
+  // Update dashboard exercise card values
+  if (!state.exercise[dateKey]) {
+    state.exercise[dateKey] = [];
+  }
+  const workouts = state.exercise[dateKey];
+  let totalKcalBurned = 0;
+  workouts.forEach(w => {
+    totalKcalBurned += parseInt(w.caloriesBurned || 0, 10);
+  });
+  
+  const displayVal = document.getElementById('display-exercise-val');
+  if (displayVal) {
+    displayVal.textContent = `${totalKcalBurned} kcal burned`;
+  }
+  
+  const displaySummary = document.getElementById('display-exercise-summary');
+  if (displaySummary) {
+    if (workouts.length === 0) {
+      displaySummary.textContent = 'No workouts logged';
+    } else {
+      const lastWorkout = workouts[workouts.length - 1];
+      displaySummary.textContent = `${lastWorkout.name} (${lastWorkout.duration}m)`;
+    }
+  }
+
   // 6. Update Period Header text
   const isToday = (dateKey === getTodayDateString());
   document.getElementById('dashboard-meal-period').textContent = isToday ? 'Today' : dateKey;
@@ -549,6 +606,68 @@ function renderWaterGlasses() {
   }
 
   document.getElementById('display-water-val').textContent = `${glassCount} / 8 glasses`;
+}
+
+function renderExerciseLog() {
+  const dateKey = state.currentDate;
+  
+  if (!state.exercise[dateKey]) {
+    state.exercise[dateKey] = [];
+  }
+  
+  const workouts = state.exercise[dateKey];
+  const listDetail = document.getElementById('exercise-items-list-detail');
+  
+  let totalKcal = 0;
+  let totalTime = 0;
+  
+  workouts.forEach(w => {
+    totalKcal += parseInt(w.caloriesBurned || 0, 10);
+    totalTime += parseInt(w.duration || 0, 10);
+  });
+  
+  // Update log totals
+  const totalKcalDisplay = document.getElementById('log-exercise-total-kcal');
+  const totalTimeDisplay = document.getElementById('log-exercise-total-time');
+  if (totalKcalDisplay) totalKcalDisplay.textContent = `${totalKcal} kcal`;
+  if (totalTimeDisplay) totalTimeDisplay.textContent = `${totalTime} mins`;
+  
+  if (!listDetail) return;
+  listDetail.innerHTML = '';
+  
+  if (workouts.length === 0) {
+    listDetail.innerHTML = `<p class="empty-list-placeholder">No exercise logged yet.</p>`;
+  } else {
+    workouts.forEach((item, index) => {
+      const row = document.createElement('div');
+      row.className = 'log-item-row';
+      row.style.borderBottom = '1px solid var(--border-color)';
+      row.style.padding = '6px 0';
+      row.innerHTML = `
+        <div class="log-item-info">
+          <span class="log-item-title" style="font-weight: 700;">${item.name}</span>
+          <span class="log-item-subtitle" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">${item.duration} mins | ${item.caloriesBurned} kcal burned</span>
+        </div>
+        <div class="log-item-values">
+          <button class="btn-item-action delete-btn exercise-log-del" data-index="${index}" aria-label="Delete workout">
+            <svg viewBox="0 0 24 24" style="width: 14px; height: 14px;"><path fill="currentColor" d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z"/></svg>
+          </button>
+        </div>
+      `;
+      listDetail.appendChild(row);
+    });
+    
+    // Bind deletes
+    listDetail.querySelectorAll('.exercise-log-del').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.getAttribute('data-index'), 10);
+        state.exercise[dateKey].splice(idx, 1);
+        saveState();
+        renderExerciseLog();
+        renderDashboard();
+      });
+    });
+  }
 }
 
 // --------------------------------------------------------------------------
@@ -700,6 +819,44 @@ function renderMealsLog() {
       }
     });
   });
+
+  renderExerciseLog();
+}
+
+// --------------------------------------------------------------------------
+// 6b. Modals: Exercise Logger Logic
+// --------------------------------------------------------------------------
+function openExerciseModal() {
+  document.getElementById('exercise-input-name').value = '';
+  document.getElementById('exercise-input-duration').value = '';
+  document.getElementById('exercise-input-calories').value = '';
+  document.getElementById('modal-exercise').classList.remove('hidden');
+}
+
+function closeExerciseModal() {
+  document.getElementById('modal-exercise').classList.add('hidden');
+}
+
+function handleSaveExercise() {
+  const name = document.getElementById('exercise-input-name').value.trim();
+  const duration = parseInt(document.getElementById('exercise-input-duration').value, 10);
+  const caloriesBurned = parseInt(document.getElementById('exercise-input-calories').value, 10);
+
+  if (!name || isNaN(duration) || isNaN(caloriesBurned)) {
+    alert('Please enter valid workout details.');
+    return;
+  }
+
+  const dateKey = state.currentDate;
+  if (!state.exercise[dateKey]) {
+    state.exercise[dateKey] = [];
+  }
+
+  state.exercise[dateKey].push({ name, duration, caloriesBurned });
+  saveState();
+  closeExerciseModal();
+  renderExerciseLog();
+  renderDashboard();
 }
 
 // --------------------------------------------------------------------------
@@ -1500,6 +1657,10 @@ function loadSettingsInputs() {
     document.getElementById('settings-height-cm').value = prof.rawHeightCm || prof.height;
   }
 
+  // Preload Optional Trackers settings
+  document.getElementById('settings-toggle-hydration').checked = prof.showHydration !== false;
+  document.getElementById('settings-toggle-exercise').checked = prof.showExercise !== false;
+
   updateApiKeyStatus(prof.apiKey);
   updateSettingsScanUsage();
 }
@@ -1554,19 +1715,25 @@ function handleSaveSettings() {
     dinnerEnd: document.getElementById('settings-dinner-end').value
   };
 
+  const showHydration = document.getElementById('settings-toggle-hydration').checked;
+  const showExercise = document.getElementById('settings-toggle-exercise').checked;
+
   const updatedProfile = { 
     ...state.profile, 
     name, age, units,
     weight: weightKg, height: heightCm,
     rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
     activity, goal, apiKey, avatar,
-    mealRanges
+    mealRanges,
+    showHydration,
+    showExercise
   };
 
   const { targetCalories, targetProtein } = calculateNutrientTargets(updatedProfile);
 
   state.profile = { ...updatedProfile, targetCalories, targetProtein };
   saveState();
+  applyTrackerVisibility();
   updateDisplayTitle();
   updateApiKeyStatus(apiKey);
 
@@ -1760,6 +1927,7 @@ document.addEventListener('DOMContentLoaded', () => {
     onboardingScreen.classList.add('hidden');
     mainScreen.classList.remove('hidden');
     updateDisplayTitle();
+    applyTrackerVisibility();
     renderMealsLog(); // Daily Meals Log is the default visible landing page
     renderDashboard();
   } else {
@@ -1859,6 +2027,41 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('btn-edit-cancel').addEventListener('click', closeEditModal);
   document.getElementById('form-edit-item').addEventListener('submit', saveEditItem);
 
+  // Exercise Log UI Triggers
+  const dashAddExerciseBtn = document.getElementById('btn-dashboard-add-exercise');
+  if (dashAddExerciseBtn) {
+    dashAddExerciseBtn.addEventListener('click', openExerciseModal);
+  }
+  const logAddExerciseBtn = document.getElementById('btn-log-add-exercise');
+  if (logAddExerciseBtn) {
+    logAddExerciseBtn.addEventListener('click', openExerciseModal);
+  }
+  
+  const closeExerciseBtn = document.getElementById('btn-close-exercise');
+  if (closeExerciseBtn) {
+    closeExerciseBtn.addEventListener('click', closeExerciseModal);
+  }
+  const cancelExerciseBtn = document.getElementById('btn-exercise-cancel');
+  if (cancelExerciseBtn) {
+    cancelExerciseBtn.addEventListener('click', closeExerciseModal);
+  }
+  const saveExerciseBtn = document.getElementById('btn-exercise-save');
+  if (saveExerciseBtn) {
+    saveExerciseBtn.addEventListener('click', handleSaveExercise);
+  }
+  
+  const headerLogExercise = document.getElementById('header-log-exercise');
+  if (headerLogExercise) {
+    headerLogExercise.addEventListener('click', () => {
+      const card = document.getElementById('card-log-exercise');
+      const list = document.getElementById('list-log-exercise');
+      if (card && list) {
+        card.classList.toggle('expanded');
+        list.classList.toggle('hidden');
+      }
+    });
+  }
+
   // Settings triggers
   document.getElementById('btn-save-settings').addEventListener('click', handleSaveSettings);
   document.getElementById('btn-test-api-key').addEventListener('click', testApiKey);
@@ -1912,9 +2115,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearLogsBtn = document.getElementById('btn-clear-day-logs');
   if (clearLogsBtn) {
     clearLogsBtn.addEventListener('click', () => {
-      if (confirm('Delete all logged food entries for this day?')) {
+      if (confirm('Delete all logged food, hydration, and exercise entries for this day?')) {
         const dateKey = state.currentDate;
         state.meals[dateKey] = { breakfast: [], lunch: [], dinner: [], snacks: [] };
+        state.water[dateKey] = 0;
+        state.exercise[dateKey] = [];
         saveState();
         renderMealsLog();
         renderDashboard();
