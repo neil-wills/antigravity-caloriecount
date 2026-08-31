@@ -192,7 +192,7 @@
     <main class="app-main-content">
       
       <!-- ================= PANEL: DASHBOARD ================= -->
-      <section id="panel-dashboard" class="app-panel hidden">
+      <section id="panel-dashboard" class="app-panel">
         <!-- Welcome Tips Card -->
         <div class="summary-card tips-card hidden" id="dashboard-welcome-tips" style="border-color: rgba(13, 148, 136, 0.4); background-color: rgba(13, 148, 136, 0.03);">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
@@ -203,7 +203,6 @@
           <ul class="ios-instructions-list" style="margin-left: 20px; margin-bottom: 12px; list-style-type: decimal; color: var(--text-secondary);">
             <li>Use the <strong>🌅 Breakfast, ☀️ Lunch, 🌙 Dinner, or 🍎 Snacks</strong> buttons below to log items.</li>
             <li>Take food photos or scale images for automatic AI portion and calorie calculations.</li>
-            <li>Click the <strong>⚙️ Settings Cog</strong> in the header to adjust your targets or enter your Gemini API Key.</li>
           </ul>
           <p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 500;">Tip: Open this in Safari and tap <strong>"Add to Home Screen"</strong> to use it like a native mobile app!</p>
         </div>
@@ -291,6 +290,37 @@
           </div>
         </div>
 
+        <!-- Fast Actions Row: Log Meal directly under Daily Target & Calorie Burn -->
+        <div class="dashboard-shortcuts">
+          <h3>Log Meal for <span id="dashboard-meal-period">Today</span></h3>
+          <div class="shortcut-buttons-grid">
+            <button class="btn-shortcut" data-meal="breakfast">
+              <span class="shortcut-icon">
+                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="12" r="7"/><circle cx="10" cy="12" r="2.8" fill="currentColor" fill-opacity="0.3" stroke-width="1.5"/><path d="M15.5 15.5L21 21" stroke-width="2.5"/><path d="M7 2.5C7 2.5 8 3.5 8 4.5" stroke-width="1.5"/><path d="M10 1.5C10 1.5 11 2.5 11 3.5" stroke-width="1.5"/><path d="M13 2.5C13 2.5 14 3.5 14 4.5" stroke-width="1.5"/></svg>
+              </span>
+              <span>Breakfast</span>
+            </button>
+            <button class="btn-shortcut" data-meal="lunch">
+              <span class="shortcut-icon">
+                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11C3 16 7 19.5 12 19.5C17 19.5 21 16 21 11H3Z" fill="currentColor" fill-opacity="0.15"/><path d="M6 11C6 8.5 8.5 7 10 7C11.5 7 12 8 12 8C12 8 12.5 7 14 7C15.5 7 18 8.5 18 11" stroke-width="1.8"/><path d="M12 2.5V7M9.5 2.5V5.5M14.5 2.5V5.5" stroke-width="1.6"/><path d="M8 14.5H16" stroke-width="1.5" opacity="0.4"/></svg>
+              </span>
+              <span>Lunch</span>
+            </button>
+            <button class="btn-shortcut" data-meal="dinner">
+              <span class="shortcut-icon">
+                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8" stroke-width="1.5" stroke-dasharray="2 2" fill="currentColor" fill-opacity="0.12"/><path d="M2.5 6V18M1.5 6H3.5M1.5 9.5H3.5" stroke-width="1.8"/><path d="M21.5 6V18M21.5 6C19.8 6 19.8 9 19.8 11V18" stroke-width="1.8"/></svg>
+              </span>
+              <span>Dinner</span>
+            </button>
+            <button class="btn-shortcut" data-meal="snacks">
+              <span class="shortcut-icon">
+                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5C7.5 20.5 4.5 17 4.5 12.8C4.5 9.5 6.8 7.5 9.2 7.5C10.6 7.5 11.5 8.3 12 8.3C12.5 8.3 13.4 7.5 14.8 7.5C17.2 7.5 19.5 9.5 19.5 12.8C19.5 17 16.5 20.5 12 20.5Z" fill="currentColor" fill-opacity="0.15"/><path d="M12 7.5V3.8" stroke-width="2"/><path d="M12 3.8C14 2 17 2.8 17 2.8C17 2.8 17 5.5 15 6.5" stroke-width="1.6" fill="currentColor" fill-opacity="0.3"/></svg>
+              </span>
+              <span>Snacks</span>
+            </button>
+          </div>
+        </div>
+
         <!-- Avo Mascot Interactive Widget -->
         <div class="summary-card avo-buddy-card" style="display: flex; gap: 15px; align-items: center; background: rgba(163, 230, 53, 0.09); border-color: rgba(163, 230, 53, 0.45); margin-bottom: 20px; border-radius: var(--border-radius-md); padding: 15px; position: relative;">
           <!-- Large animated Avo character bubble -->
@@ -343,41 +373,10 @@
             </div>
           </div>
         </div>
-
-        <!-- Fast Actions Row -->
-        <div class="dashboard-shortcuts">
-          <h3>Log Meal for <span id="dashboard-meal-period">Today</span></h3>
-          <div class="shortcut-buttons-grid">
-            <button class="btn-shortcut" data-meal="breakfast">
-              <span class="shortcut-icon">
-                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="12" r="7"/><circle cx="10" cy="12" r="2.8" fill="currentColor" fill-opacity="0.3" stroke-width="1.5"/><path d="M15.5 15.5L21 21" stroke-width="2.5"/><path d="M7 2.5C7 2.5 8 3.5 8 4.5" stroke-width="1.5"/><path d="M10 1.5C10 1.5 11 2.5 11 3.5" stroke-width="1.5"/><path d="M13 2.5C13 2.5 14 3.5 14 4.5" stroke-width="1.5"/></svg>
-              </span>
-              <span>Breakfast</span>
-            </button>
-            <button class="btn-shortcut" data-meal="lunch">
-              <span class="shortcut-icon">
-                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11C3 16 7 19.5 12 19.5C17 19.5 21 16 21 11H3Z" fill="currentColor" fill-opacity="0.15"/><path d="M6 11C6 8.5 8.5 7 10 7C11.5 7 12 8 12 8C12 8 12.5 7 14 7C15.5 7 18 8.5 18 11" stroke-width="1.8"/><path d="M12 2.5V7M9.5 2.5V5.5M14.5 2.5V5.5" stroke-width="1.6"/><path d="M8 14.5H16" stroke-width="1.5" opacity="0.4"/></svg>
-              </span>
-              <span>Lunch</span>
-            </button>
-            <button class="btn-shortcut" data-meal="dinner">
-              <span class="shortcut-icon">
-                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.8" stroke-width="1.5" stroke-dasharray="2 2" fill="currentColor" fill-opacity="0.12"/><path d="M2.5 6V18M1.5 6H3.5M1.5 9.5H3.5" stroke-width="1.8"/><path d="M21.5 6V18M21.5 6C19.8 6 19.8 9 19.8 11V18" stroke-width="1.8"/></svg>
-              </span>
-              <span>Dinner</span>
-            </button>
-            <button class="btn-shortcut" data-meal="snacks">
-              <span class="shortcut-icon">
-                <svg class="meal-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5C7.5 20.5 4.5 17 4.5 12.8C4.5 9.5 6.8 7.5 9.2 7.5C10.6 7.5 11.5 8.3 12 8.3C12.5 8.3 13.4 7.5 14.8 7.5C17.2 7.5 19.5 9.5 19.5 12.8C19.5 17 16.5 20.5 12 20.5Z" fill="currentColor" fill-opacity="0.15"/><path d="M12 7.5V3.8" stroke-width="2"/><path d="M12 3.8C14 2 17 2.8 17 2.8C17 2.8 17 5.5 15 6.5" stroke-width="1.6" fill="currentColor" fill-opacity="0.3"/></svg>
-              </span>
-              <span>Snacks</span>
-            </button>
-          </div>
-        </div>
       </section>
 
       <!-- ================= PANEL: MEALS LOG ================= -->
-      <section id="panel-log" class="app-panel">
+      <section id="panel-log" class="app-panel hidden">
         <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
           <div>
             <h2>Daily Meals</h2>
@@ -704,11 +703,11 @@
 
     <!-- Bottom Tab Navigation Bar -->
     <nav class="app-nav-bar">
-      <button class="nav-tab" data-tab="dashboard">
+      <button class="nav-tab active" data-tab="dashboard">
         <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8h5Z"/></svg>
         <span>Dashboard</span>
       </button>
-      <button class="nav-tab active" data-tab="log">
+      <button class="nav-tab" data-tab="log">
         <svg viewBox="0 0 24 24" class="nav-icon"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2zm0 8H7v-2h10v2z"/></svg>
         <span>Logs</span>
       </button>

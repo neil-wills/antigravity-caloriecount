@@ -432,14 +432,8 @@ function initOnboarding() {
 
     updateDisplayTitle();
     
-    // Force switch tab view to Daily Meals Log tab on first setup completion
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector('.nav-tab[data-tab="log"]').classList.add('active');
-    document.querySelectorAll('.app-panel').forEach(p => p.classList.add('hidden'));
-    document.getElementById('panel-log').classList.remove('hidden');
-
-    renderMealsLog();
-    renderDashboard();
+    // Switch view to Dashboard on setup completion
+    switchTab('dashboard');
   });
 }
 
@@ -2537,8 +2531,7 @@ document.addEventListener('DOMContentLoaded', () => {
     mainScreen.classList.remove('hidden');
     updateDisplayTitle();
     applyTrackerVisibility();
-    renderMealsLog(); // Daily Meals Log is the default visible landing page
-    renderDashboard();
+    switchTab('dashboard'); // Dashboard is the default landing view
   } else {
     onboardingScreen.classList.remove('hidden');
     mainScreen.classList.add('hidden');
