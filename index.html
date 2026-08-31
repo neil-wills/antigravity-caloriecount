@@ -221,10 +221,15 @@
             </div>
           </div>
 
-          <div class="calorie-math-grid">
+          <div class="calorie-math-grid" style="grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;">
             <div class="math-column">
               <span class="math-label">Target</span>
               <span id="display-target-calories" class="math-number">---</span>
+            </div>
+            <div class="math-sign" style="color: #9333ea;">+</div>
+            <div class="math-column">
+              <span class="math-label" style="color: #9333ea;">Burned</span>
+              <span id="display-burned-calories" class="math-number" style="color: #9333ea;">0</span>
             </div>
             <div class="math-sign">-</div>
             <div class="math-column">
@@ -233,8 +238,55 @@
             </div>
             <div class="math-sign">=</div>
             <div class="math-column highlight-column">
-              <span class="math-label">Remaining</span>
+              <span class="math-label">Net Left</span>
               <span id="display-math-remaining" class="math-number">---</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Daily Energy Target & Burn Graphical Encouragement Card -->
+        <div class="summary-card energy-encouragement-card" id="card-energy-encouragement">
+          <div class="energy-card-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="energy-fire-icon" id="energy-fire-anim">🔥</span>
+              <div>
+                <h3 style="margin: 0; font-size: 1.05rem; font-weight: 800;">Daily Energy &amp; Burn Balance</h3>
+                <span style="font-size: 0.76rem; color: var(--text-muted); font-weight: 500;">Target Goal + Active Workout Burn</span>
+              </div>
+            </div>
+            <span class="burn-level-badge" id="display-burn-level">🌱 Rest &amp; Fuel</span>
+          </div>
+
+          <!-- Dual-Fill Visual Progress Meter -->
+          <div class="energy-meter-container" style="margin-top: 14px;">
+            <div class="energy-meter-labels" style="display: flex; justify-content: space-between; font-size: 0.78rem; font-weight: 700; margin-bottom: 6px;">
+              <span style="color: var(--accent-orange);">🍽️ Eaten: <strong id="meter-eaten-val">0</strong> kcal</span>
+              <span style="color: var(--accent-teal);">🎯 Base: <strong id="meter-target-val">1800</strong> kcal</span>
+              <span style="color: #9333ea;">🔥 Burned: <strong id="meter-burned-val">0</strong> kcal</span>
+            </div>
+            
+            <div class="energy-bar-track">
+              <!-- Eaten energy fill -->
+              <div class="energy-bar-fill-eaten" id="meter-bar-eaten" style="width: 0%;"></div>
+              <!-- Exercise burn extension zone -->
+              <div class="energy-bar-fill-burn" id="meter-bar-burn" style="width: 0%;"></div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--text-muted); margin-top: 5px;">
+              <span>0 kcal</span>
+              <span id="meter-net-status" style="font-weight: 600; color: var(--text-secondary);">Net Budget: 1800 kcal remaining</span>
+              <span id="meter-adjusted-max">Max Budget: 1800 kcal</span>
+            </div>
+          </div>
+
+          <!-- Graphical Encouragement Banner -->
+          <div class="encouragement-banner" id="energy-encouragement-banner" style="margin-top: 14px;">
+            <span class="encouragement-emoji" id="encouragement-emoji">✨</span>
+            <div style="flex: 1;">
+              <div id="encouragement-title" style="font-weight: 800; font-size: 0.88rem; color: var(--text-primary);">Great pacing today!</div>
+              <p id="encouragement-message" style="margin: 0; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.35; margin-top: 2px;">
+                You are on track with your calorie targets. Stay hydrated and fuel consistently.
+              </p>
             </div>
           </div>
         </div>

@@ -524,18 +524,32 @@ function renderDashboard() {
 
   eatenCalories = Math.round(eatenCalories);
   eatenProtein = Math.round(eatenProtein);
-  const remainingCalories = targetCals - eatenCalories;
 
-  // 2. Update text panels
+  // Calculate exercise burn additions
+  if (!state.exercise[dateKey]) {
+    state.exercise[dateKey] = [];
+  }
+  const workouts = state.exercise[dateKey];
+  let totalKcalBurned = 0;
+  workouts.forEach(w => {
+    totalKcalBurned += parseInt(w.caloriesBurned || 0, 10);
+  });
+
+  const adjustedTarget = targetCals + totalKcalBurned;
+  const netRemaining = adjustedTarget - eatenCalories;
+
+  // 2. Update text panels & Hero Calorie Math
   document.getElementById('display-target-calories').textContent = targetCals;
+  const displayBurned = document.getElementById('display-burned-calories');
+  if (displayBurned) displayBurned.textContent = `+${totalKcalBurned}`;
   document.getElementById('display-eaten-calories').textContent = eatenCalories;
-  document.getElementById('display-math-remaining').textContent = remainingCalories;
+  document.getElementById('display-math-remaining').textContent = netRemaining;
   
   const displayLeft = document.getElementById('display-calories-left');
-  displayLeft.textContent = Math.abs(remainingCalories);
+  displayLeft.textContent = Math.abs(netRemaining);
   
   const circleLabel = document.querySelector('.calories-left-label');
-  if (remainingCalories >= 0) {
+  if (netRemaining >= 0) {
     circleLabel.textContent = 'kcal left';
     displayLeft.style.color = '';
   } else {
@@ -543,21 +557,101 @@ function renderDashboard() {
     displayLeft.style.color = 'var(--accent-danger)';
   }
 
-  // 3. Calorie SVG Ring Animation
+  // 3. Calorie SVG Ring Animation (against adjusted energy target)
   const circleFill = document.getElementById('circle-progress');
   const circumference = 2 * Math.PI * 50; // Radius = 50, circumference ~314.16
-  const progressRatio = Math.min(eatenCalories / targetCals, 1.0);
+  const progressRatio = Math.min(eatenCalories / (adjustedTarget || 1), 1.0);
   const offset = circumference - (progressRatio * circumference);
   circleFill.style.strokeDashoffset = offset;
 
   // Dynamic progress ring colors depending on percentage
-  if (progressRatio >= 1.0 && remainingCalories < -100) {
+  if (progressRatio >= 1.0 && netRemaining < -100) {
     circleFill.style.stroke = 'var(--accent-danger)';
   } else if (progressRatio >= 0.85) {
     circleFill.style.stroke = 'var(--accent-teal)'; // Approaching target is positive
   } else {
     circleFill.style.stroke = 'var(--accent-orange)';
   }
+
+  // 3b. Energy Target & Burn Graphical Encouragement Card
+  const meterEaten = document.getElementById('meter-eaten-val');
+  const meterTarget = document.getElementById('meter-target-val');
+  const meterBurned = document.getElementById('meter-burned-val');
+  const meterBarEaten = document.getElementById('meter-bar-eaten');
+  const meterBarBurn = document.getElementById('meter-bar-burn');
+  const meterNetStatus = document.getElementById('meter-net-status');
+  const meterAdjustedMax = document.getElementById('meter-adjusted-max');
+
+  if (meterEaten) meterEaten.textContent = eatenCalories;
+  if (meterTarget) meterTarget.textContent = targetCals;
+  if (meterBurned) meterBurned.textContent = totalKcalBurned;
+
+  const maxScale = Math.max(adjustedTarget, eatenCalories, targetCals * 1.15) || 2000;
+  const eatenPercent = Math.min(100, Math.max(0, (eatenCalories / maxScale) * 100));
+  const burnPercent = Math.min(100 - eatenPercent, Math.max(0, (totalKcalBurned / maxScale) * 100));
+
+  if (meterBarEaten) meterBarEaten.style.width = `${eatenPercent}%`;
+  if (meterBarBurn) meterBarBurn.style.width = `${burnPercent}%`;
+
+  if (meterNetStatus) {
+    meterNetStatus.textContent = netRemaining >= 0 
+      ? `Net Left: ${netRemaining} kcal` 
+      : `Net Over: +${Math.abs(netRemaining)} kcal`;
+    meterNetStatus.style.color = netRemaining >= 0 ? 'var(--text-secondary)' : 'var(--accent-danger)';
+  }
+  if (meterAdjustedMax) {
+    meterAdjustedMax.textContent = totalKcalBurned > 0 
+      ? `Adjusted Goal: ${adjustedTarget} kcal` 
+      : `Base Goal: ${targetCals} kcal`;
+  }
+
+  // Dynamic Encouragement Level & Tailored Messaging
+  let burnLevel = '🌱 Rest & Fuel';
+  let encTitle = 'Great Pacing Today!';
+  let encEmoji = '✨';
+  let encMsg = 'You are balancing your meals smoothly. Stay consistent and keep hydrated!';
+
+  if (totalKcalBurned >= 400) {
+    burnLevel = `⚡ Champion Burner (+${totalKcalBurned} kcal)`;
+    encEmoji = '⚡';
+    encTitle = 'High-Power Workout Day!';
+    encMsg = `Incredible workout! You've expanded your daily energy budget by +${totalKcalBurned} kcal. Refuel with quality protein and wholesome carbs.`;
+  } else if (totalKcalBurned >= 150) {
+    burnLevel = `🔥 Active Burner (+${totalKcalBurned} kcal)`;
+    encEmoji = '🔥';
+    encTitle = 'Awesome Calorie Burn!';
+    encMsg = `Your active workout created a +${totalKcalBurned} kcal energy cushion, giving you ${Math.max(0, netRemaining)} kcal of flexible fuel remaining.`;
+  } else if (eatenCalories === 0) {
+    burnLevel = '🌅 Fresh Start';
+    encEmoji = '🥑';
+    encTitle = 'Ready to Fuel Your Goals!';
+    encMsg = `Your base energy target is ${targetCals} kcal. Snap a photo of your breakfast or log a quick walk to start the day strong.`;
+  } else if (netRemaining >= 200) {
+    burnLevel = '🎯 On-Track Deficit';
+    encEmoji = '🌟';
+    encTitle = 'Deficit Momentum is Strong!';
+    encMsg = `You've logged ${eatenCalories} kcal with ${netRemaining} kcal left in your target budget. Great portion discipline!`;
+  } else if (netRemaining >= -50) {
+    burnLevel = '🎯 Target Bullseye';
+    encEmoji = '🎯';
+    encTitle = 'Spot-on Energy Balance!';
+    encMsg = `You're within ${Math.abs(netRemaining)} kcal of your goal. Perfect nutritional pacing for the day!`;
+  } else {
+    burnLevel = '💪 Refuel & Recharge';
+    encEmoji = '💪';
+    encTitle = 'Active Refueling Day';
+    encMsg = `You're ${Math.abs(netRemaining)} kcal over your baseline. A short brisk walk or balanced lighter meal tomorrow keeps you in complete control.`;
+  }
+
+  const burnLevelEl = document.getElementById('display-burn-level');
+  const encTitleEl = document.getElementById('encouragement-title');
+  const encEmojiEl = document.getElementById('encouragement-emoji');
+  const encMsgEl = document.getElementById('encouragement-message');
+
+  if (burnLevelEl) burnLevelEl.textContent = burnLevel;
+  if (encTitleEl) encTitleEl.textContent = encTitle;
+  if (encEmojiEl) encEmojiEl.textContent = encEmoji;
+  if (encMsgEl) encMsgEl.textContent = encMsg;
 
   // 4. Update Protein progress bar
   document.getElementById('display-protein-text').textContent = `${eatenProtein}g / ${targetProt}g`;
@@ -567,16 +661,7 @@ function renderDashboard() {
   // 5. Render water glass hydration tracker
   renderWaterGlasses();
 
-  // Update dashboard exercise card values
-  if (!state.exercise[dateKey]) {
-    state.exercise[dateKey] = [];
-  }
-  const workouts = state.exercise[dateKey];
-  let totalKcalBurned = 0;
-  workouts.forEach(w => {
-    totalKcalBurned += parseInt(w.caloriesBurned || 0, 10);
-  });
-  
+  // 5b. Update dashboard exercise card values
   const displayVal = document.getElementById('display-exercise-val');
   if (displayVal) {
     displayVal.textContent = `${totalKcalBurned} kcal burned`;
