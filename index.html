@@ -335,8 +335,11 @@
               <span id="display-exercise-val" class="nutrient-val">0 kcal burned</span>
             </div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
-              <span id="display-exercise-summary" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px;">No workouts logged</span>
-              <button type="button" class="btn btn-secondary-outline btn-nav-small" id="btn-dashboard-add-exercise" style="width: auto; padding: 4px 10px; font-size: 0.76rem; border-radius: var(--border-radius-sm);">+ Log</button>
+              <span id="display-exercise-summary" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px;">No workouts logged</span>
+              <div style="display: flex; gap: 5px;">
+                <button type="button" class="btn btn-secondary-outline btn-nav-small" id="btn-dashboard-view-activities" style="width: auto; padding: 4px 8px; font-size: 0.73rem; border-radius: var(--border-radius-sm);" title="View logged workouts">View (0)</button>
+                <button type="button" class="btn btn-secondary-outline btn-nav-small" id="btn-dashboard-add-exercise" style="width: auto; padding: 4px 8px; font-size: 0.73rem; border-radius: var(--border-radius-sm);">+ Log</button>
+              </div>
             </div>
           </div>
         </div>
@@ -996,6 +999,41 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="btn-exercise-cancel">Cancel</button>
         <button type="button" class="btn btn-primary" id="btn-exercise-save">Save Workout</button>
+      </div>
+    </div>
+  <!-- ================= MODAL: VIEW ACTIVITIES ================= -->
+  <div id="modal-view-activities" class="modal-backdrop hidden">
+    <div class="modal-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 1.4rem;">🏃‍♂️</span>
+          <h2 style="margin: 0; font-size: 1.15rem;">Logged Activities</h2>
+        </div>
+        <button class="btn-close-modal" id="btn-close-view-activities" aria-label="Close activities modal">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px 20px;">
+        <!-- Day Summary Stats Header -->
+        <div class="activity-summary-banner" id="activity-modal-summary" style="display: flex; justify-content: space-between; align-items: center; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.25); border-radius: var(--border-radius-sm); padding: 12px 16px; margin-bottom: 15px;">
+          <div>
+            <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: #9333ea;">Total Active Burn</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary);" id="activity-modal-total-kcal">0 kcal</div>
+          </div>
+          <div style="text-align: right;">
+            <div style="font-size: 0.72rem; text-transform: uppercase; font-weight: 700; color: var(--text-muted);">Duration</div>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-secondary);" id="activity-modal-total-time">0 mins</div>
+          </div>
+        </div>
+
+        <!-- Scrollable Activities List -->
+        <div id="activity-modal-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 320px; overflow-y: auto; padding-right: 2px;">
+          <!-- Dynamically populated activity cards -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="display: flex; justify-content: space-between; gap: 10px;">
+        <button type="button" class="btn btn-secondary-outline" id="btn-modal-close-activities" style="flex: 1;">Close</button>
+        <button type="button" class="btn btn-primary" id="btn-modal-add-another-activity" style="flex: 1;">+ Log Activity</button>
       </div>
     </div>
   </div>

@@ -673,8 +673,14 @@ function renderDashboard() {
       displaySummary.textContent = 'No workouts logged';
     } else {
       const lastWorkout = workouts[workouts.length - 1];
-      displaySummary.textContent = `${lastWorkout.name} (${lastWorkout.duration}m)`;
+      const emoji = getActivityEmoji(lastWorkout.name);
+      displaySummary.textContent = `${emoji} ${lastWorkout.name} (${lastWorkout.duration}m)`;
     }
+  }
+
+  const btnViewActivities = document.getElementById('btn-dashboard-view-activities');
+  if (btnViewActivities) {
+    btnViewActivities.textContent = `View (${workouts.length})`;
   }
 
   // 6. Update Period Header text
@@ -711,6 +717,22 @@ function renderWaterGlasses() {
   document.getElementById('display-water-val').textContent = `${glassCount} / 8 glasses`;
 }
 
+function getActivityEmoji(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('walk')) return '🚶';
+  if (n.includes('run') || n.includes('jog')) return '🏃';
+  if (n.includes('cycl') || n.includes('bike') || n.includes('spin')) return '🚴';
+  if (n.includes('swim')) return '🏊';
+  if (n.includes('weight') || n.includes('lift') || n.includes('gym') || n.includes('strength') || n.includes('push')) return '🏋️';
+  if (n.includes('yoga') || n.includes('stretch') || n.includes('pilates')) return '🧘';
+  if (n.includes('box') || n.includes('kick') || n.includes('martial')) return '🥊';
+  if (n.includes('tennis') || n.includes('padel') || n.includes('pickleball') || n.includes('badminton')) return '🎾';
+  if (n.includes('hike') || n.includes('climb')) return '🧗';
+  if (n.includes('hiit') || n.includes('crossfit') || n.includes('circuit')) return '⚡';
+  if (n.includes('dance') || n.includes('zumba')) return '💃';
+  return '🏃‍♂️';
+}
+
 function renderExerciseLog() {
   const dateKey = state.currentDate;
   
@@ -742,17 +764,23 @@ function renderExerciseLog() {
     listDetail.innerHTML = `<p class="empty-list-placeholder">No exercise logged yet.</p>`;
   } else {
     workouts.forEach((item, index) => {
+      const emoji = getActivityEmoji(item.name);
       const row = document.createElement('div');
       row.className = 'log-item-row';
       row.style.borderBottom = '1px solid var(--border-color)';
-      row.style.padding = '6px 0';
+      row.style.padding = '8px 0';
       row.innerHTML = `
-        <div class="log-item-info">
-          <span class="log-item-title" style="font-weight: 700;">${item.name}</span>
-          <span class="log-item-subtitle" style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 500;">${item.duration} mins | ${item.caloriesBurned} kcal burned</span>
+        <div class="log-item-info" style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 1.3rem;">${emoji}</span>
+          <div>
+            <span class="log-item-title" style="font-weight: 700;">${item.name}</span>
+            <span class="log-item-subtitle" style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 500;">
+              ⏱️ ${item.duration} mins &nbsp;|&nbsp; <strong style="color: #9333ea;">🔥 ${item.caloriesBurned} kcal</strong>
+            </span>
+          </div>
         </div>
         <div class="log-item-values">
-          <button class="btn-item-action delete-btn exercise-log-del" data-index="${index}" aria-label="Delete workout">
+          <button class="btn-item-action delete-btn exercise-log-del" data-index="${index}" aria-label="Delete workout" title="Delete workout">
             <svg viewBox="0 0 24 24" style="width: 14px; height: 14px;"><path fill="currentColor" d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z"/></svg>
           </button>
         </div>
@@ -960,6 +988,93 @@ function handleSaveExercise() {
   closeExerciseModal();
   renderExerciseLog();
   renderDashboard();
+  renderActivitiesModalList();
+}
+
+// --------------------------------------------------------------------------
+// 6c. Modals: Logged Activities Viewer Logic
+// --------------------------------------------------------------------------
+function openViewActivitiesModal() {
+  const dateKey = state.currentDate;
+  if (!state.exercise[dateKey]) {
+    state.exercise[dateKey] = [];
+  }
+  renderActivitiesModalList();
+  document.getElementById('modal-view-activities').classList.remove('hidden');
+}
+
+function closeViewActivitiesModal() {
+  document.getElementById('modal-view-activities').classList.add('hidden');
+}
+
+function renderActivitiesModalList() {
+  const dateKey = state.currentDate;
+  const workouts = state.exercise[dateKey] || [];
+  
+  let totalKcal = 0;
+  let totalTime = 0;
+  workouts.forEach(w => {
+    totalKcal += parseInt(w.caloriesBurned || 0, 10);
+    totalTime += parseInt(w.duration || 0, 10);
+  });
+
+  const totalKcalEl = document.getElementById('activity-modal-total-kcal');
+  const totalTimeEl = document.getElementById('activity-modal-total-time');
+  if (totalKcalEl) totalKcalEl.textContent = `${totalKcal} kcal burned`;
+  if (totalTimeEl) totalTimeEl.textContent = `${totalTime} mins active (${workouts.length} ${workouts.length === 1 ? 'activity' : 'activities'})`;
+
+  const container = document.getElementById('activity-modal-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  if (workouts.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 30px 15px; color: var(--text-muted);">
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">🏃‍♂️</div>
+        <p style="font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">No activities logged yet for this day</p>
+        <p style="font-size: 0.78rem;">Tap "+ Log Activity" below to track workouts, walking, or exercise.</p>
+      </div>
+    `;
+    return;
+  }
+
+  workouts.forEach((item, index) => {
+    const emoji = getActivityEmoji(item.name);
+    const card = document.createElement('div');
+    card.className = 'activity-card-item';
+    card.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+        <div class="activity-item-icon">${emoji}</div>
+        <div style="flex: 1;">
+          <div style="font-weight: 700; font-size: 0.92rem; color: var(--text-primary);">${item.name}</div>
+          <div style="font-size: 0.76rem; color: var(--text-secondary); margin-top: 2px; display: flex; align-items: center; gap: 8px;">
+            <span>⏱️ ${item.duration} mins</span>
+            <span>•</span>
+            <span style="color: #9333ea; font-weight: 700;">🔥 ${item.caloriesBurned} kcal</span>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn-item-action delete-btn modal-activity-del" data-index="${index}" aria-label="Delete activity" title="Delete this activity">
+        <svg viewBox="0 0 24 24" style="width: 15px; height: 15px;"><path fill="currentColor" d="M19 6.41L17.59 5L12 10.59L6.41 5L5 6.41L10.59 12L5 17.59L6.41 19L12 13.41L17.59 19L19 17.59L13.41 12L19 6.41Z"/></svg>
+      </button>
+    `;
+    container.appendChild(card);
+  });
+
+  // Bind delete handlers
+  container.querySelectorAll('.modal-activity-del').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      if (confirm(`Remove "${workouts[idx].name}" from your logged activities?`)) {
+        state.exercise[dateKey].splice(idx, 1);
+        saveState();
+        renderActivitiesModalList();
+        renderExerciseLog();
+        renderDashboard();
+      }
+    });
+  });
 }
 
 // --------------------------------------------------------------------------
@@ -2526,6 +2641,10 @@ document.addEventListener('DOMContentLoaded', () => {
   if (dashAddExerciseBtn) {
     dashAddExerciseBtn.addEventListener('click', openExerciseModal);
   }
+  const dashViewActivitiesBtn = document.getElementById('btn-dashboard-view-activities');
+  if (dashViewActivitiesBtn) {
+    dashViewActivitiesBtn.addEventListener('click', openViewActivitiesModal);
+  }
   const logAddExerciseBtn = document.getElementById('btn-log-add-exercise');
   if (logAddExerciseBtn) {
     logAddExerciseBtn.addEventListener('click', openExerciseModal);
@@ -2542,6 +2661,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const saveExerciseBtn = document.getElementById('btn-exercise-save');
   if (saveExerciseBtn) {
     saveExerciseBtn.addEventListener('click', handleSaveExercise);
+  }
+
+  // Logged Activities Viewer Modal Listeners
+  const closeViewActivitiesBtn = document.getElementById('btn-close-view-activities');
+  if (closeViewActivitiesBtn) {
+    closeViewActivitiesBtn.addEventListener('click', closeViewActivitiesModal);
+  }
+  const btnModalCloseActivities = document.getElementById('btn-modal-close-activities');
+  if (btnModalCloseActivities) {
+    btnModalCloseActivities.addEventListener('click', closeViewActivitiesModal);
+  }
+  const btnModalAddAnother = document.getElementById('btn-modal-add-another-activity');
+  if (btnModalAddAnother) {
+    btnModalAddAnother.addEventListener('click', () => {
+      closeViewActivitiesModal();
+      openExerciseModal();
+    });
   }
   
   const headerLogExercise = document.getElementById('header-log-exercise');
