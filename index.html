@@ -726,13 +726,16 @@
           </p>
 
           <!-- Divider -->
-          <div class="or-separator"><span>OR ENTER MANUALLY</span></div>
+          <div class="or-separator"><span>OR ENTER MANUALLY BELOW (can be a list of items)</span></div>
 
           <!-- Manual Calculator Form -->
           <div class="manual-add-form">
             <div class="input-group">
-              <label for="manual-food-name">Food Name</label>
-              <input type="text" id="manual-food-name" placeholder="e.g. Banana, Chicken Breast, etc.">
+              <label for="manual-food-name" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>Food Name</span>
+                <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 500;">(can be a list of items)</span>
+              </label>
+              <input type="text" id="manual-food-name" placeholder="e.g. Greek yogurt, blueberries, honey">
             </div>
 
             <div class="input-row">

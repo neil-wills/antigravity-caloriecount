@@ -1035,7 +1035,17 @@ function handleManualAdd() {
   const lookup = lookupFood(name);
   const protein = parseFloat((weight * (lookup.protein / 100)).toFixed(1));
 
-  state.composerItems.push({ name, weightGrams: weight, calories, protein });
+  // If the user enters a comma-separated list of items, extract them as ingredients list
+  const parts = name.split(',').map(s => s.trim()).filter(Boolean);
+  const ingredients = parts.length > 1 ? parts : [];
+
+  state.composerItems.push({ 
+    name, 
+    weightGrams: weight, 
+    calories, 
+    protein,
+    ingredients
+  });
 
   // Clear inputs
   nameInput.value = '';
