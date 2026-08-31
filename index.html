@@ -196,7 +196,7 @@
         <!-- Welcome Tips Card -->
         <div class="summary-card tips-card hidden" id="dashboard-welcome-tips" style="border-color: rgba(13, 148, 136, 0.4); background-color: rgba(13, 148, 136, 0.03);">
           <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-            <h3 style="font-weight: 700; font-size: 1.15rem; color: var(--accent-teal);">🎉 Welcome, <span id="welcome-tip-username">Elizabeth</span>!</h3>
+            <h3 style="font-weight: 700; font-size: 1.15rem; color: var(--accent-teal); display: flex; align-items: center; gap: 4px;">🎉 <span id="welcome-tip-avatar">🥑</span> Welcome, <span id="welcome-tip-username">Elizabeth</span>!</h3>
             <button id="btn-close-tips" style="background: none; border: none; font-size: 1.6rem; color: var(--text-muted); cursor: pointer; line-height: 1; padding: 0 4px;">&times;</button>
           </div>
           <p style="font-size: 0.9rem; margin-bottom: 12px; color: var(--text-secondary);">Your daily caloric target is set! Here are a few tips to help you get started:</p>
@@ -365,7 +365,7 @@
 
         <!-- Configured Profile Card -->
         <div class="summary-card settings-card">
-          <h3>Elizabeth's Settings</h3>
+          <h3 id="settings-title-display" style="display: flex; align-items: center; gap: 6px;"><span id="settings-avatar-icon">🥑</span> <span id="settings-name-display">Elizabeth</span>'s Settings</h3>
           <div class="settings-list">
             
             <div class="settings-item">

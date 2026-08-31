@@ -300,13 +300,33 @@ function initOnboarding() {
 function updateDisplayTitle() {
   const displayTitle = document.getElementById('app-title-display');
   const avatarCircle = document.getElementById('header-avatar-circle');
+  const welcomeAvatar = document.getElementById('welcome-tip-avatar');
+  const welcomeUsername = document.getElementById('welcome-tip-username');
+  const settingsAvatar = document.getElementById('settings-avatar-icon');
+  const settingsName = document.getElementById('settings-name-display');
+
   if (state.profile) {
-    if (displayTitle && state.profile.name) {
-      displayTitle.textContent = `${state.profile.name}'s Plate`;
-      document.title = `${state.profile.name}'s Plate - Calorie Tracker`;
+    const name = state.profile.name || 'Elizabeth';
+    const avatar = state.profile.avatar || '🥑';
+
+    if (displayTitle) {
+      displayTitle.textContent = `${name}'s Plate`;
+      document.title = `${name}'s Plate - Calorie Tracker`;
     }
-    if (avatarCircle && state.profile.avatar) {
-      avatarCircle.textContent = state.profile.avatar;
+    if (avatarCircle) {
+      avatarCircle.textContent = avatar;
+    }
+    if (welcomeAvatar) {
+      welcomeAvatar.textContent = avatar;
+    }
+    if (welcomeUsername) {
+      welcomeUsername.textContent = name;
+    }
+    if (settingsAvatar) {
+      settingsAvatar.textContent = avatar;
+    }
+    if (settingsName) {
+      settingsName.textContent = name;
     }
   }
 }
