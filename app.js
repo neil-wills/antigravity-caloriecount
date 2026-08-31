@@ -868,7 +868,7 @@ async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
     ? `Analyze this food scale image. Read the weight display value in grams (this is critical!). Identify the food on the scale. Calculate the calories and protein content based on this weight. Format the response strictly as JSON with this structure: { "name": "Food Name", "weightGrams": 250, "calories": 350, "proteinGrams": 28.5, "scaleWeightDetected": true, "confidence": "high" }. Do not add any markdown markup besides the JSON object.`
     : `Identify the food items on the plate. Estimate the portions in grams, total calories, and protein (g). Format the response strictly as JSON with this structure: { "name": "Food Name", "weightGrams": 150, "calories": 250, "proteinGrams": 8.0, "scaleWeightDetected": false, "confidence": "medium" }. Do not add any markdown markup besides the JSON object.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [
@@ -1351,7 +1351,7 @@ async function testApiKey() {
   status.textContent = 'Testing connection...';
   
   // Call small test query to verify API key validity
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+  const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${key}`;
   
   try {
     const response = await fetch(url, {
