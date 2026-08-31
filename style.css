@@ -1670,3 +1670,18 @@ input:focus, select:focus {
   transform: scale(1.12);
   box-shadow: var(--shadow-glow);
 }
+
+/* Avo Mascot Floating Animation and Effects */
+@keyframes floatCharacter {
+  0% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-5px) scale(1.03); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.avo-character-bubble {
+  transition: transform var(--transition-fast);
+}
+
+.avo-character-bubble:active {
+  transform: scale(0.9) rotate(-12deg) !important;
+}

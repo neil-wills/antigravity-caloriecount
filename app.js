@@ -326,6 +326,9 @@ function renderDashboard() {
     document.getElementById('welcome-tip-username').textContent = state.profile.name || 'Elizabeth';
   }
 
+  // Update Avo-Buddy speech bubble context
+  updateAvoSpeech();
+
   const dateKey = state.currentDate;
   
   // Initialize standard structures if date is missing
@@ -1630,6 +1633,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Initialize Avo Mascot Click handlers
+  initAvoBuddy();
+
   // PWA Service Worker Registration
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
@@ -1639,3 +1645,92 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// --------------------------------------------------------------------------
+// 15. Avo-Buddy Mascot Interactive Logic & Motivation quotes
+// --------------------------------------------------------------------------
+function updateAvoSpeech() {
+  const bubble = document.getElementById('avo-speech-bubble');
+  if (!bubble || !state.profile) return;
+
+  const nickname = state.profile.name || 'Elizabeth';
+  const dateKey = state.currentDate;
+  const todayMeals = state.meals[dateKey] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
+  
+  // 1. Morning Specific Greeting (5 AM to 11 AM)
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 11) {
+    if (!todayMeals.breakfast || todayMeals.breakfast.length === 0) {
+      bubble.textContent = `"Good morning, ${nickname}! 🌅 A healthy breakfast kickstarts your metabolism. Tap Breakfast below to log your morning meal!"`;
+      return;
+    }
+  }
+
+  // 2. Hydration Check
+  const waterCount = state.water[dateKey] || 0;
+  if (waterCount === 0) {
+    bubble.textContent = `"Avo-Buddy reminder: 💧 Staying hydrated helps filter protein efficiently. Tap a water glass below to record hydration!"`;
+    return;
+  }
+
+  // 3. Calorie calculations
+  const targetCals = state.profile.targetCalories || 2000;
+  let eatenCalories = 0;
+  for (const period of ['breakfast', 'lunch', 'dinner', 'snacks']) {
+    if (todayMeals[period]) {
+      todayMeals[period].forEach(item => {
+        eatenCalories += parseFloat(item.calories || 0);
+      });
+    }
+  }
+  eatenCalories = Math.round(eatenCalories);
+  const remaining = targetCals - eatenCalories;
+
+  if (eatenCalories === 0) {
+    bubble.textContent = `"Hi ${nickname}! 🥑 Ready to log your plate? Let's track your delicious food entries together today!"`;
+  } else if (remaining > 500) {
+    bubble.textContent = `"Doing great, ${nickname}! You have eaten ${eatenCalories} kcal and have ${remaining} kcal remaining to reach your target."`;
+  } else if (remaining > 0 && remaining <= 500) {
+    bubble.textContent = `"So close, ${nickname}! 🌟 Only ${remaining} kcal left for today. You are doing a spectacular job!"`;
+  } else if (remaining === 0) {
+    bubble.textContent = `"Bingo! 🎯 You hit your calorie target perfectly today. Avo-Buddy is super proud!"`;
+  } else {
+    bubble.textContent = `"Fully fueled, ${nickname}! 💪 You logged ${eatenCalories} kcal (${Math.abs(remaining)} kcal over target). Excellent job logging!"`;
+  }
+}
+
+const AVO_TIPS = [
+  "Did you know? Avocados are rich in monounsaturated fats that sustain energy and keep cravings away! 🥑",
+  "Consistency is the secret ingredient! Log everything—even tiny snacks count. ✨",
+  "You're doing fantastic! Avo-Buddy is cheering for your healthy targets today! 🎉",
+  "Scanning a scale? Ensure the camera frames the digital display directly for Gemini AI reading! 📸",
+  "Protein preserves joint strength and maintains lean muscle tissue over time! 🌟",
+  "Take a snapshot of your plate, and my Gemini Vision scanner will estimate portion weight and calories! 📸",
+  "Avo-Buddy Tip: Adding protein-rich seeds or nuts to your toast keeps your energy stable all day! 🥜",
+  "Want a clean slate? Tap 'Reset Profile & Start Over' in Settings anytime! ⚙️",
+  "Hydration raises your metabolic rate! Drink a glass of water right now and tap a cup below! 💧"
+];
+
+function initAvoBuddy() {
+  const avoBtn = document.getElementById('btn-tap-avo');
+  const bubble = document.getElementById('avo-speech-bubble');
+  if (!avoBtn || !bubble) return;
+
+  avoBtn.addEventListener('click', () => {
+    const currentText = bubble.textContent;
+    let newTip = currentText;
+    
+    // Ensure we pick a new tip
+    while (newTip === currentText) {
+      const idx = Math.floor(Math.random() * AVO_TIPS.length);
+      newTip = `"${AVO_TIPS[idx]}"`;
+    }
+    
+    bubble.textContent = newTip;
+    
+    // Quick visual bounce reaction
+    avoBtn.style.animation = 'none';
+    avoBtn.offsetHeight; // trigger layout reflow
+    avoBtn.style.animation = 'floatCharacter 3s ease-in-out infinite';
+  });
+}
