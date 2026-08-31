@@ -56,7 +56,8 @@ let state = {
   exercise: {},  // Date key YYYY-MM-DD -> [{ name, duration, caloriesBurned }]
   currentDate: getTodayDateString(),
   composerMealType: 'breakfast',
-  composerItems: []
+  composerItems: [],
+  serverKeyConfigured: false
 };
 
 // Utility to get YYYY-MM-DD in local time
@@ -161,7 +162,7 @@ function incrementDailyScanCounter() {
 function updateSettingsScanUsage() {
   const usageText = document.getElementById('api-usage-status');
   if (usageText) {
-    const hasKey = state.profile && state.profile.apiKey && state.profile.apiKey.trim() !== '';
+    const hasKey = (state.profile && state.profile.apiKey && state.profile.apiKey.trim() !== '') || state.serverKeyConfigured;
     if (hasKey) {
       usageText.classList.remove('hidden');
       const current = getDailyScanCount();
@@ -169,6 +170,23 @@ function updateSettingsScanUsage() {
     } else {
       usageText.classList.add('hidden');
     }
+  }
+}
+
+// Check if serverless API environment variable GEMINI_API_KEY is available
+async function checkServerApiKeyStatus() {
+  try {
+    const res = await fetch('/api/analyze', { method: 'GET' });
+    if (res.ok) {
+      const info = await res.json();
+      if (info && info.configured) {
+        state.serverKeyConfigured = true;
+        updateApiKeyStatus(state.profile ? state.profile.apiKey : '');
+        updateSettingsScanUsage();
+      }
+    }
+  } catch (e) {
+    // Running in local file/offline mode without serverless runtime
   }
 }
 
@@ -1177,52 +1195,116 @@ function handleImageUpload(e) {
 function processVisionAnalysis(base64Data, mimeType) {
   const apiKey = state.profile ? state.profile.apiKey : '';
 
+// Clinical Vision Prompt accounting for hidden cooking fats & multi-item separation
+const CLINICAL_VISION_PROMPT = `You are a clinical nutrition and computer vision dietitian.
+Analyze this food/scale photo with high scientific rigor.
+
+IMPORTANT CLINICAL CONSTRAINTS:
+Photo-based calorie tracking systematically underestimates energy by 25-35% (approx 250-350 kcal per meal) due to invisible cooking fats, oils, butter, dressings, hidden sugars, and compressed food density.
+1. ALWAYS account for cooking methods (e.g. olive oil/butter used for pan-searing or sautéing, deep-frying oils, marinades, dressings, glazes).
+2. MULTI-ITEM DETECTION: If multiple distinct foods or components are present on a plate/tray (e.g. Grilled Chicken, Steamed Broccoli, Brown Rice, Dressing), break them down into separate objects inside the "items" array so the user can verify each item individually. If only one food item is present, return 1 item in "items".
+3. Check if a digital/analog food weighing scale display is visible. If visible, read the scale weight in grams and set "scaleWeightDetected": true.
+4. Estimate realistic portion weights in grams, calculate accurate calories (including cooking fats), and protein in grams.
+5. List all identified ingredients for each item in "detectedIngredients".
+
+If the image does NOT contain food, ingredients, or a food weighing scale, return strictly:
+{
+  "isFoodDetected": false,
+  "rejectionMessage": "No food items, ingredients, or food weighing scale could be identified in this image. Please take a clear photo of your food plate or weighing scale."
+}
+
+If food or scale is detected, return strictly:
+{
+  "isFoodDetected": true,
+  "scaleWeightDetected": true/false,
+  "confidence": "high/medium/low",
+  "items": [
+    {
+      "name": "Food Name (e.g. Pan-Seared Salmon in Olive Oil)",
+      "weightGrams": 180,
+      "calories": 360,
+      "proteinGrams": 34.0,
+      "detectedIngredients": ["Salmon fillet", "Olive oil (1 tbsp)", "Garlic", "Lemon juice"],
+      "hiddenFatsNote": "Includes estimated 1 tbsp olive oil (+120 kcal) from cooking"
+    }
+  ]
+}
+Return only the valid JSON object with no surrounding markdown or explanation.`;
+
+// Routing: Client Key vs Server Environment Proxy vs Mock Estimation
+async function processVisionAnalysis(base64Data, mimeType) {
+  const apiKey = state.profile ? state.profile.apiKey : '';
+
   if (apiKey && apiKey.trim() !== '') {
     callGeminiVisionAPI(base64Data, mimeType, apiKey);
+  } else if (state.serverKeyConfigured) {
+    callServerlessVisionAPI(base64Data, mimeType);
   } else {
+    // Attempt auto-discovery of serverless proxy
+    try {
+      const testRes = await fetch('/api/analyze', { method: 'GET' });
+      if (testRes.ok) {
+        const info = await testRes.json();
+        if (info && info.configured) {
+          state.serverKeyConfigured = true;
+          callServerlessVisionAPI(base64Data, mimeType);
+          return;
+        }
+      }
+    } catch (e) {
+      // Serverless not available
+    }
     runMockScanningAnimation();
   }
 }
 
-// Genuine API Fetch Client
+// Serverless Backend API Fetch
+async function callServerlessVisionAPI(base64Data, mimeType) {
+  try {
+    const response = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prompt: CLINICAL_VISION_PROMPT,
+        base64Data,
+        mimeType: mimeType || 'image/jpeg'
+      })
+    });
+
+    if (!response.ok) {
+      const errJson = await response.json().catch(() => ({}));
+      throw new Error(errJson.error || `Server Error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const textResult = data.candidates[0].content.parts[0].text;
+    const parsedData = JSON.parse(textResult);
+
+    if (parsedData.isFoodDetected === false) {
+      showScannerError("Image Rejected", parsedData.rejectionMessage || "No food or weighing scale could be identified in this image. Please capture a clear photo of your food or ingredients.");
+      return;
+    }
+
+    incrementDailyScanCounter();
+    displayScanResults(parsedData);
+  } catch (error) {
+    console.error('Serverless vision API failed:', error);
+    showScannerError("AI Scanner Offline", "We are unable to connect to the Vision AI service. Please verify your connection or try again later.");
+  }
+}
+
+// Direct Client-side API Fetch Client
 async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
-  const prompt = `You are a professional nutrition vision assistant.
-Analyze this image. First, determine if the image contains any food items, ingredients, or a food weighing scale.
-If the image does NOT contain food or ingredients or a scale with food, return a JSON response with:
-{
-  "isFoodDetected": false,
-  "rejectionMessage": "No food items or ingredients could be identified in this image. Please take a clear photo of your food plate or weighing scale."
-}
-
-If food or a scale is detected:
-1. Determine if a food weighing scale display is visible. If so, read the numerical weight (assume grams) and set "scaleWeightDetected" to true.
-2. Identify the food items and ingredients visible.
-3. Estimate their portion weights in grams.
-4. Calculate calories and protein.
-5. Create a list of the specific detected ingredients/items (e.g. ["Greek yogurt", "blueberries", "honey", "chia seeds"]).
-6. Return a JSON response with:
-{
-  "isFoodDetected": true,
-  "name": "Food Name",
-  "weightGrams": 150,
-  "calories": 250,
-  "proteinGrams": 8.0,
-  "scaleWeightDetected": true/false,
-  "detectedIngredients": ["ingredient 1", "ingredient 2", ...],
-  "confidence": "high/medium/low"
-}
-Format the response strictly as a single JSON object. Do not add any markdown markup or extra text besides the JSON object.`;
-
   const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
   
   const payload = {
     contents: [
       {
         parts: [
-          { text: prompt },
+          { text: CLINICAL_VISION_PROMPT },
           {
             inlineData: {
-              mimeType: mimeType,
+              mimeType: mimeType || 'image/jpeg',
               data: base64Data
             }
           }
@@ -1280,8 +1362,8 @@ function runMockScanningAnimation(templateData = null) {
   const steps = [
     { text: "Reading visual display layers...", delay: 600 },
     { text: scannerMode === 'scale' ? "Locating scale numbers..." : "Detecting food edges...", delay: 1200 },
-    { text: "Querying nutritional density maps...", delay: 1800 },
-    { text: "Confirming calculations...", delay: 2400 }
+    { text: "Estimating depth, portion density & hidden cooking oils...", delay: 1800 },
+    { text: "Confirming nutritional calculations...", delay: 2400 }
   ];
 
   steps.forEach(step => {
@@ -1291,29 +1373,46 @@ function runMockScanningAnimation(templateData = null) {
   });
 
   setTimeout(() => {
-    // Generate results after completion of step delay
     let mockResult = {};
 
     if (templateData) {
-      // If template trigger
       mockResult = templateData;
     } else {
-      // If general capture
       if (scannerMode === 'scale') {
         mockResult = {
-          name: "Grilled Chicken Breast",
-          weightGrams: 185,
-          calories: Math.round(185 * 1.65), // 165 kcal / 100g
-          proteinGrams: parseFloat((185 * 0.31).toFixed(1)),
-          scaleWeightDetected: true
+          isFoodDetected: true,
+          scaleWeightDetected: true,
+          items: [
+            {
+              name: "Grilled Chicken Breast (Pan-Seared)",
+              weightGrams: 185,
+              calories: Math.round(185 * 1.65 + 60), // including 60 kcal cooking fat
+              proteinGrams: parseFloat((185 * 0.31).toFixed(1)),
+              detectedIngredients: ["Chicken Breast", "Olive Oil (0.5 tbsp)", "Sea Salt", "Black Pepper"],
+              hiddenFatsNote: "Includes ~0.5 tbsp cooking olive oil (+60 kcal)"
+            }
+          ]
         };
       } else {
         mockResult = {
-          name: "Greek Yogurt Salad Bowl",
-          weightGrams: 220,
-          calories: 290,
-          proteinGrams: 14.5,
-          scaleWeightDetected: false
+          isFoodDetected: true,
+          scaleWeightDetected: false,
+          items: [
+            {
+              name: "Greek Yogurt Breakfast Bowl",
+              weightGrams: 220,
+              calories: 290,
+              proteinGrams: 15.0,
+              detectedIngredients: ["0% Greek Yogurt", "Blueberries", "Raw Honey", "Chia Seeds"]
+            },
+            {
+              name: "Almond Butter Toast",
+              weightGrams: 75,
+              calories: 210,
+              proteinGrams: 6.5,
+              detectedIngredients: ["Whole Wheat Bread", "Almond Butter", "Banana Slices"]
+            }
+          ]
         };
       }
     }
@@ -1322,75 +1421,282 @@ function runMockScanningAnimation(templateData = null) {
   }, 2600);
 }
 
-// Display Scanner Results Review Screen
+// Global active items array under review in scanner
+let currentScanItems = [];
+
+// Display Scanner Results Review Screen supporting single or multiple items
 function displayScanResults(result) {
   setScannerState('results');
 
-  const badge = document.getElementById('result-badge-type');
-  badge.textContent = result.scaleWeightDetected ? 'Scale Weight Applied' : 'AI Portion Estimate';
-  badge.style.backgroundColor = result.scaleWeightDetected ? 'var(--accent-teal)' : 'var(--accent-orange)';
+  let rawItems = [];
+  if (result.items && Array.isArray(result.items) && result.items.length > 0) {
+    rawItems = result.items;
+  } else {
+    rawItems = [{
+      name: result.name || "Scanned Food Item",
+      weightGrams: result.weightGrams || 150,
+      calories: result.calories || 200,
+      proteinGrams: result.proteinGrams !== undefined ? result.proteinGrams : (result.protein || 5),
+      detectedIngredients: result.detectedIngredients || [],
+      hiddenFatsNote: result.hiddenFatsNote || ''
+    }];
+  }
 
-  document.getElementById('result-item-name').textContent = result.name;
-  document.getElementById('result-weight').textContent = `${result.weightGrams} g`;
-  document.getElementById('result-calories').textContent = `${Math.round(result.calories)} kcal`;
-  
-  const protein = result.proteinGrams !== undefined ? result.proteinGrams : result.protein;
-  document.getElementById('result-protein').textContent = `${protein} g`;
+  const isScale = !!result.scaleWeightDetected;
 
-  // Scale Read warnings
+  currentScanItems = rawItems.map((item, idx) => ({
+    id: idx,
+    selected: true,
+    name: item.name,
+    weightGrams: parseFloat(item.weightGrams) || 100,
+    calories: Math.round(parseFloat(item.calories) || 150),
+    proteinGrams: parseFloat(item.proteinGrams !== undefined ? item.proteinGrams : (item.protein || 0)),
+    scaleWeightDetected: isScale,
+    ingredients: Array.isArray(item.detectedIngredients) ? [...item.detectedIngredients] : [],
+    hiddenFatsNote: item.hiddenFatsNote || ''
+  }));
+
+  renderScanItemCards();
+  updateScanAddButton();
+
   const warningBox = document.getElementById('scale-warning-box');
-  if (scannerMode === 'scale' && !result.scaleWeightDetected) {
-    warningBox.classList.remove('hidden');
-  } else {
-    warningBox.classList.add('hidden');
-  }
-
-  // Populate ingredients box if ingredients list is returned
-  const ingredientsBox = document.getElementById('result-ingredients-box');
-  const ingredientsList = document.getElementById('result-ingredients-list');
-  if (ingredientsBox && ingredientsList) {
-    if (result.detectedIngredients && Array.isArray(result.detectedIngredients) && result.detectedIngredients.length > 0) {
-      ingredientsBox.classList.remove('hidden');
-      ingredientsList.textContent = result.detectedIngredients.join(', ');
-      state.activeScanIngredients = result.detectedIngredients;
+  if (warningBox) {
+    if (scannerMode === 'scale' && !isScale) {
+      warningBox.classList.remove('hidden');
     } else {
-      ingredientsBox.classList.add('hidden');
-      state.activeScanIngredients = null;
+      warningBox.classList.add('hidden');
     }
-  } else {
-    state.activeScanIngredients = null;
   }
+}
 
-  // Autofill adjustment inputs
-  document.getElementById('result-input-name').value = result.name;
-  document.getElementById('result-input-weight').value = result.weightGrams;
-  document.getElementById('result-input-calories').value = Math.round(result.calories);
-  document.getElementById('result-input-protein').value = protein;
+// Render dynamic item cards in results confirmation view
+function renderScanItemCards() {
+  const container = document.getElementById('scanner-results-list-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  currentScanItems.forEach((item, index) => {
+    const card = document.createElement('div');
+    card.className = 'summary-card scan-result-card';
+    card.style.padding = '14px 16px';
+    card.style.marginBottom = '0';
+    card.style.transition = 'opacity 0.2s ease, border-color 0.2s ease';
+    if (!item.selected) {
+      card.style.opacity = '0.55';
+    }
+
+    card.innerHTML = `
+      <div class="result-header" style="display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex: 1;">
+          <label class="switch-toggle-label switch-sm">
+            <input type="checkbox" class="item-select-toggle" data-index="${index}" ${item.selected ? 'checked' : ''}>
+            <span class="switch-slider"></span>
+          </label>
+          <span style="font-weight: 700; font-size: 0.98rem; color: var(--text-primary);">${item.name}</span>
+        </div>
+        <span class="badge" style="background-color: ${item.scaleWeightDetected ? 'var(--accent-teal)' : 'var(--accent-orange)'}; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; color: #fff;">
+          ${item.scaleWeightDetected ? 'Scale Applied' : 'AI Estimate'}
+        </span>
+      </div>
+
+      <div class="fine-tune-form" style="border-top: 1px dashed var(--border-color); padding-top: 10px;">
+        <div class="input-row" style="margin-bottom: 8px;">
+          <div class="input-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.72rem; color: var(--text-muted);">Food Item Name</label>
+            <input type="text" class="input-text-dark item-input-name" data-index="${index}" value="${item.name}">
+          </div>
+        </div>
+        
+        <div class="input-row" style="margin-bottom: 8px;">
+          <div class="input-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.72rem; color: var(--text-muted);">Weight (g)</label>
+            <input type="number" class="input-text-dark item-input-weight" data-index="${index}" value="${item.weightGrams}">
+          </div>
+          <div class="input-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.72rem; color: var(--text-muted);">Calories (kcal)</label>
+            <input type="number" class="input-text-dark item-input-calories" data-index="${index}" value="${item.calories}">
+          </div>
+          <div class="input-group" style="margin-bottom: 0;">
+            <label style="font-size: 0.72rem; color: var(--text-muted);">Protein (g)</label>
+            <input type="number" class="input-text-dark item-input-protein" data-index="${index}" value="${item.proteinGrams}" step="0.1">
+          </div>
+        </div>
+
+        <!-- Quick Compensate for Hidden Fats & Density -->
+        <div style="margin-top: 8px; margin-bottom: 6px;">
+          <label style="font-size: 0.72rem; font-weight: 700; color: var(--text-secondary); display: flex; align-items: center; gap: 4px;">
+            <span>⚡ Compensate for Hidden Ingredients & Density:</span>
+          </label>
+          <div class="quick-add-pills">
+            <button type="button" class="pill-btn oil quick-compensate-btn" data-index="${index}" data-cal="120" data-name="Cooking Oil / Butter" title="Add 1 tbsp cooking fat (+120 kcal)">🧈 + Oil / Butter (+120 kcal)</button>
+            <button type="button" class="pill-btn sauce quick-compensate-btn" data-index="${index}" data-cal="90" data-name="Salad Dressing / Mayo" title="Add dressing (+90 kcal)">🥗 + Dressing (+90 kcal)</button>
+            <button type="button" class="pill-btn sauce quick-compensate-btn" data-index="${index}" data-cal="50" data-name="Sauce / Marinade" title="Add sauce/glaze (+50 kcal)">🥣 + Sauce (+50 kcal)</button>
+            <button type="button" class="pill-btn density quick-density-btn" data-index="${index}" data-ratio="1.2" title="Multiply weight & calories by +20% for dense/packed foods">📦 + Dense / Packed (+20%)</button>
+          </div>
+        </div>
+
+        <!-- Ingredients List & Custom Tag Adder -->
+        <div style="margin-top: 10px; padding: 8px 10px; background-color: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.15); border-radius: var(--border-radius-sm);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <strong style="color: var(--accent-teal); font-size: 0.78rem; font-weight: 700;">🔍 Ingredients & Extra Items:</strong>
+            <span style="font-size: 0.7rem; color: var(--text-muted);">(${item.ingredients.length} items)</span>
+          </div>
+
+          <div class="ingredient-tags-container" id="tags-container-${index}">
+            ${item.ingredients.map((ing, ingIdx) => `
+              <span class="ingredient-tag">
+                ${ing}
+                <button type="button" class="tag-remove-btn" data-item-idx="${index}" data-ing-idx="${ingIdx}" aria-label="Remove ingredient">&times;</button>
+              </span>
+            `).join('')}
+            ${item.ingredients.length === 0 ? '<span style="font-size: 0.72rem; color: var(--text-muted); font-style: italic;">No extra ingredients listed.</span>' : ''}
+          </div>
+
+          <!-- Add custom extra ingredient row -->
+          <div class="ingredient-add-row">
+            <input type="text" class="ingredient-add-input" id="input-add-ing-${index}" placeholder="+ Add extra ingredient (e.g. olive oil, cheese, nuts)">
+            <button type="button" class="ingredient-add-btn" data-index="${index}">Add</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+
+  bindScanItemCardEvents();
+}
+
+function bindScanItemCardEvents() {
+  document.querySelectorAll('.item-select-toggle').forEach(chk => {
+    chk.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-index'), 10);
+      currentScanItems[idx].selected = e.target.checked;
+      renderScanItemCards();
+      updateScanAddButton();
+    });
+  });
+
+  document.querySelectorAll('.item-input-name').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-index'), 10);
+      currentScanItems[idx].name = e.target.value;
+    });
+  });
+
+  document.querySelectorAll('.item-input-weight').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-index'), 10);
+      currentScanItems[idx].weightGrams = parseFloat(e.target.value) || 0;
+    });
+  });
+
+  document.querySelectorAll('.item-input-calories').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-index'), 10);
+      currentScanItems[idx].calories = parseFloat(e.target.value) || 0;
+    });
+  });
+
+  document.querySelectorAll('.item-input-protein').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-index'), 10);
+      currentScanItems[idx].proteinGrams = parseFloat(e.target.value) || 0;
+    });
+  });
+
+  document.querySelectorAll('.quick-compensate-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      const calAdd = parseInt(btn.getAttribute('data-cal'), 10);
+      const nameAdd = btn.getAttribute('data-name');
+      
+      currentScanItems[idx].calories += calAdd;
+      if (!currentScanItems[idx].ingredients.includes(nameAdd)) {
+        currentScanItems[idx].ingredients.push(nameAdd);
+      }
+      renderScanItemCards();
+    });
+  });
+
+  document.querySelectorAll('.quick-density-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      const ratio = parseFloat(btn.getAttribute('data-ratio')) || 1.2;
+      
+      currentScanItems[idx].weightGrams = Math.round(currentScanItems[idx].weightGrams * ratio);
+      currentScanItems[idx].calories = Math.round(currentScanItems[idx].calories * ratio);
+      if (!currentScanItems[idx].ingredients.includes('Packed/Dense portion (+20%)')) {
+        currentScanItems[idx].ingredients.push('Packed/Dense portion (+20%)');
+      }
+      renderScanItemCards();
+    });
+  });
+
+  document.querySelectorAll('.tag-remove-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const itemIdx = parseInt(btn.getAttribute('data-item-idx'), 10);
+      const ingIdx = parseInt(btn.getAttribute('data-ing-idx'), 10);
+      currentScanItems[itemIdx].ingredients.splice(ingIdx, 1);
+      renderScanItemCards();
+    });
+  });
+
+  document.querySelectorAll('.ingredient-add-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      const input = document.getElementById(`input-add-ing-${idx}`);
+      if (input && input.value.trim() !== '') {
+        const val = input.value.trim();
+        currentScanItems[idx].ingredients.push(val);
+        input.value = '';
+        renderScanItemCards();
+      }
+    });
+  });
+}
+
+function updateScanAddButton() {
+  const addBtn = document.getElementById('btn-scanner-add');
+  if (!addBtn) return;
+  const selectedCount = currentScanItems.filter(i => i.selected).length;
+  if (selectedCount === 0) {
+    addBtn.textContent = 'No Items Selected';
+    addBtn.disabled = true;
+    addBtn.style.opacity = '0.5';
+  } else if (selectedCount === 1) {
+    addBtn.textContent = 'Add Item to Meal';
+    addBtn.disabled = false;
+    addBtn.style.opacity = '1';
+  } else {
+    addBtn.textContent = `Add All (${selectedCount} Items) to Meal`;
+    addBtn.disabled = false;
+    addBtn.style.opacity = '1';
+  }
 }
 
 function handleAddScannerResult() {
-  const name = document.getElementById('result-input-name').value.trim();
-  const weight = parseFloat(document.getElementById('result-input-weight').value);
-  const calories = parseFloat(document.getElementById('result-input-calories').value);
-  const protein = parseFloat(document.getElementById('result-input-protein').value) || 0;
-
-  if (!name || isNaN(weight) || isNaN(calories)) {
-    alert('Please enter valid item details.');
+  const selected = currentScanItems.filter(i => i.selected);
+  if (selected.length === 0) {
+    alert('Please select at least one item to add.');
     return;
   }
 
-  state.composerItems.push({ 
-    name, 
-    weightGrams: weight, 
-    calories, 
-    protein,
-    ingredients: state.activeScanIngredients || null
+  selected.forEach(item => {
+    state.composerItems.push({
+      name: item.name,
+      weightGrams: item.weightGrams,
+      calories: item.calories,
+      protein: item.proteinGrams,
+      ingredients: item.ingredients.length > 0 ? item.ingredients : null
+    });
   });
+
   renderComposerItems();
   closeScanner();
 }
 
-// Onboard templates logic
+// Onboard templates logic with multi-item support
 function initScannerTemplates() {
   const container = document.getElementById('mock-templates-container');
   container.querySelectorAll('.btn-mock-template').forEach(btn => {
@@ -1400,37 +1706,65 @@ function initScannerTemplates() {
       let templateData = {};
       if (type === 'food') {
         const name = btn.getAttribute('data-name');
-        const ingredients = name.includes('Avocado') 
-          ? ["Sourdough Toast", "Creamy Avocado", "Cherry Tomatoes", "Sesame Seeds"]
-          : ["Fresh Apple"];
-        templateData = {
-          name: name,
-          weightGrams: parseFloat(btn.getAttribute('data-weight')),
-          calories: parseFloat(btn.getAttribute('data-calories')),
-          proteinGrams: parseFloat(btn.getAttribute('data-protein')),
-          scaleWeightDetected: false,
-          detectedIngredients: ingredients
-        };
+        if (name.includes('Avocado')) {
+          templateData = {
+            isFoodDetected: true,
+            scaleWeightDetected: false,
+            items: [
+              {
+                name: "Avocado Sourdough Toast",
+                weightGrams: 160,
+                calories: 310,
+                proteinGrams: 9.0,
+                detectedIngredients: ["Sourdough Toast", "Hass Avocado", "Cherry Tomatoes", "Sesame Seeds"],
+                hiddenFatsNote: "Includes olive oil spread"
+              },
+              {
+                name: "Soft Boiled Eggs (2x)",
+                weightGrams: 100,
+                calories: 140,
+                proteinGrams: 12.0,
+                detectedIngredients: ["Organic Eggs", "Black Pepper", "Olive Oil drizzle"]
+              }
+            ]
+          };
+        } else {
+          templateData = {
+            isFoodDetected: true,
+            scaleWeightDetected: false,
+            items: [
+              {
+                name: name,
+                weightGrams: parseFloat(btn.getAttribute('data-weight')),
+                calories: parseFloat(btn.getAttribute('data-calories')),
+                proteinGrams: parseFloat(btn.getAttribute('data-protein')),
+                detectedIngredients: ["Fresh Apple Slices", "Cinnamon Powder"]
+              }
+            ]
+          };
+        }
       } else {
         const name = btn.getAttribute('data-name');
-        const ingredients = name.includes('Salmon')
-          ? ["Grilled Salmon Fillet", "Lemon Slices", "Dill Seasoning"]
-          : ["Creamy Peanut Butter"];
         const weight = parseFloat(btn.getAttribute('data-scale'));
         const cal100 = parseFloat(btn.getAttribute('data-cal100'));
         const prot100 = parseFloat(btn.getAttribute('data-protein100'));
         templateData = {
-          name: name,
-          weightGrams: weight,
-          calories: Math.round(weight * (cal100 / 100)),
-          proteinGrams: parseFloat((weight * (prot100 / 100)).toFixed(1)),
+          isFoodDetected: true,
           scaleWeightDetected: true,
-          detectedIngredients: ingredients
+          items: [
+            {
+              name: name,
+              weightGrams: weight,
+              calories: Math.round(weight * (cal100 / 100)),
+              proteinGrams: parseFloat((weight * (prot100 / 100)).toFixed(1)),
+              detectedIngredients: name.includes('Salmon') ? ["Grilled Salmon Fillet", "Lemon Slices", "Dill Seasoning", "Olive Oil marinade"] : ["Peanut Butter"]
+            }
+          ]
         };
       }
 
       setScannerState('scanning');
-      document.getElementById('scanner-image-preview').src = 'icon.svg'; // Placeholder icon preview
+      document.getElementById('scanner-image-preview').src = 'icon.svg';
       runMockScanningAnimation(templateData);
     });
   });
@@ -1752,8 +2086,12 @@ function handleSaveSettings() {
 
 function updateApiKeyStatus(key) {
   const status = document.getElementById('api-key-status');
+  if (!status) return;
   if (key && key.trim() !== '') {
-    status.textContent = 'Status: Active (Gemini Vision AI Engine Engaged)';
+    status.textContent = 'Status: Active (Client API Key Connected)';
+    status.style.color = '#16a34a'; // Green
+  } else if (state.serverKeyConfigured) {
+    status.textContent = 'Status: Active (Connected via Server Environment Variable)';
     status.style.color = '#16a34a'; // Green
   } else {
     status.textContent = 'Status: Running in Mock Demonstration Mode';
@@ -2025,6 +2363,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initRouter();
   initDatePicker();
+  checkServerApiKeyStatus();
 
   const onboardingScreen = document.getElementById('screen-onboarding');
   const mainScreen = document.getElementById('screen-main');

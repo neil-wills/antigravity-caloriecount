@@ -1750,3 +1750,134 @@ input:checked + .switch-slider {
 input:checked + .switch-slider:before {
   transform: translateX(20px);
 }
+
+.switch-sm {
+  width: 36px !important;
+  height: 20px !important;
+}
+
+.switch-sm .switch-slider:before {
+  height: 14px !important;
+  width: 14px !important;
+  left: 3px !important;
+  bottom: 3px !important;
+}
+
+.switch-sm input:checked + .switch-slider:before {
+  transform: translateX(16px) !important;
+}
+
+/* --------------------------------------------------------------------------
+   Scan Results: Multi-Item, Hidden Fats & Ingredient Customization
+   -------------------------------------------------------------------------- */
+.quick-add-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.pill-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  font-size: 0.73rem;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transition-fast);
+}
+
+.pill-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-teal);
+  transform: translateY(-1px);
+}
+
+.pill-btn:active {
+  transform: scale(0.96);
+}
+
+.pill-btn.oil {
+  border-color: rgba(245, 158, 11, 0.4);
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.pill-btn.sauce {
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.pill-btn.density {
+  border-color: rgba(13, 148, 136, 0.4);
+  background: rgba(13, 148, 136, 0.08);
+}
+
+.ingredient-tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 6px;
+  align-items: center;
+}
+
+.ingredient-tag {
+  background: rgba(13, 148, 136, 0.12);
+  border: 1px solid rgba(13, 148, 136, 0.25);
+  color: var(--accent-teal);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ingredient-tag .tag-remove-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0 1px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ingredient-tag .tag-remove-btn:hover {
+  color: var(--accent-danger);
+}
+
+.ingredient-add-row {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.ingredient-add-input {
+  flex: 1;
+  font-size: 0.78rem;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.ingredient-add-btn {
+  font-size: 0.75rem;
+  padding: 4px 9px;
+  background: var(--accent-teal);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+}
+

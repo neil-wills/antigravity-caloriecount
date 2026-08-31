@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lizzys-plate-v31';
+const CACHE_NAME = 'lizzys-plate-v32';
 const ASSETS = [
   './',
   './index.html',
@@ -37,8 +37,8 @@ self.addEventListener('activate', (e) => {
 
 // Fetch Event (Cache First, Network Fallback)
 self.addEventListener('fetch', (e) => {
-  // Avoid caching Google API requests or exterior assets
-  if (e.request.url.includes('googleapis.com') || e.request.url.includes('google-analytics')) {
+  // Avoid caching backend API requests, Google API requests, or exterior assets
+  if (e.request.url.includes('/api/') || e.request.url.includes('googleapis.com') || e.request.url.includes('google-analytics')) {
     return fetch(e.request);
   }
 

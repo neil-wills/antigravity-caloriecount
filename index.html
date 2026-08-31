@@ -846,67 +846,19 @@
 
         <!-- Results confirmation State -->
         <div id="scanner-state-results" class="scanner-state hidden">
-          <div class="scanning-result-success">
+          <div class="scanning-result-success" style="margin-bottom: 12px;">
             <span class="success-icon">✓</span>
             <h3>Scan Analysis Complete!</h3>
           </div>
 
-          <div class="summary-card scan-result-card">
-            <div class="result-header">
-              <span id="result-badge-type" class="badge">Scale Detected</span>
-              <h4 id="result-item-name">Salmon Fillet</h4>
-            </div>
-            
-            <div class="result-metrics">
-              <div class="metric-item">
-                <span class="lbl">Weight</span>
-                <span id="result-weight" class="val">---</span>
-              </div>
-              <div class="metric-item">
-                <span class="lbl">Est. Calories</span>
-                <span id="result-calories" class="val">---</span>
-              </div>
-              <div class="metric-item">
-                <span class="lbl">Protein</span>
-                <span id="result-protein" class="val">---</span>
-              </div>
-            </div>
+          <!-- Dynamic container for single or multiple results cards -->
+          <div id="scanner-results-list-container" style="display: flex; flex-direction: column; gap: 15px; max-height: 380px; overflow-y: auto; padding-right: 4px; padding-bottom: 5px;">
+            <!-- Dynamic cards injected here -->
+          </div>
 
-            <!-- Detected Ingredients/Items List -->
-            <div id="result-ingredients-box" class="hidden" style="margin-top: 15px; padding: 10px 12px; background-color: rgba(13, 148, 136, 0.05); border: 1px solid rgba(13, 148, 136, 0.15); border-radius: var(--border-radius-sm); font-size: 0.82rem;">
-              <strong style="color: var(--accent-teal); font-weight: 700;">🔍 Detected Ingredients/Items:</strong>
-              <div id="result-ingredients-list" style="margin-top: 4px; line-height: 1.4; color: var(--text-primary); font-weight: 500;">No extra ingredients logged.</div>
-            </div>
-
-            <!-- Warning if weight couldn't be read -->
-            <div id="scale-warning-box" class="info-alert warning hidden" style="margin-top: 15px;">
-              <p>⚠️ Couldn't read scale weight clearly. Please adjust below.</p>
-            </div>
-
-            <!-- Fine-tune Result Inputs -->
-            <div class="fine-tune-form">
-              <h4>Fine-tune details before adding:</h4>
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="result-input-name">Food Name</label>
-                  <input type="text" id="result-input-name" class="input-text-dark">
-                </div>
-              </div>
-              <div class="input-row">
-                <div class="input-group">
-                  <label for="result-input-weight">Weight (g)</label>
-                  <input type="number" id="result-input-weight" class="input-text-dark">
-                </div>
-                <div class="input-group">
-                  <label for="result-input-calories">Calories (kcal)</label>
-                  <input type="number" id="result-input-calories" class="input-text-dark">
-                </div>
-                <div class="input-group">
-                  <label for="result-input-protein">Protein (g)</label>
-                  <input type="number" id="result-input-protein" class="input-text-dark" step="0.1">
-                </div>
-              </div>
-            </div>
+          <!-- Warning if weight couldn't be read -->
+          <div id="scale-warning-box" class="info-alert warning hidden" style="margin-top: 15px; margin-bottom: 0;">
+            <p>⚠️ Couldn't read scale weight clearly. Please adjust values in the cards.</p>
           </div>
         </div>
 
