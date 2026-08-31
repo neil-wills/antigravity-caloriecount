@@ -259,12 +259,15 @@ function initOnboarding() {
       heightCm = rawHeightCm;
     }
 
+    const avatar = document.getElementById('input-avatar-val').value || '🥑';
+
     const rawProfile = { 
       name, age, gender, units, 
       weight: weightKg, height: heightCm, 
       rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
       activity, goal, apiKey: '',
-      tipsDismissed: false
+      tipsDismissed: false,
+      avatar
     };
 
     const { targetCalories, targetProtein } = calculateNutrientTargets(rawProfile);
@@ -296,9 +299,15 @@ function initOnboarding() {
 
 function updateDisplayTitle() {
   const displayTitle = document.getElementById('app-title-display');
-  if (state.profile && state.profile.name) {
-    displayTitle.textContent = `${state.profile.name}'s Plate`;
-    document.title = `${state.profile.name}'s Plate - Calorie Tracker`;
+  const avatarCircle = document.getElementById('header-avatar-circle');
+  if (state.profile) {
+    if (displayTitle && state.profile.name) {
+      displayTitle.textContent = `${state.profile.name}'s Plate`;
+      document.title = `${state.profile.name}'s Plate - Calorie Tracker`;
+    }
+    if (avatarCircle && state.profile.avatar) {
+      avatarCircle.textContent = state.profile.avatar;
+    }
   }
 }
 
@@ -1231,6 +1240,17 @@ function loadSettingsInputs() {
   document.getElementById('settings-goal').value = prof.goal;
   document.getElementById('settings-api-key').value = prof.apiKey || '';
 
+  // Preload settings avatar picker
+  const savedAvatar = prof.avatar || '🥑';
+  document.getElementById('settings-avatar-val').value = savedAvatar;
+  document.querySelectorAll('#settings-avatar-picker .btn-avatar').forEach(btn => {
+    if (btn.getAttribute('data-avatar') === savedAvatar) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
   const weightTitle = document.getElementById('settings-weight-lbl-title');
   const heightFtIn = document.getElementById('settings-height-row-ftin');
   const heightCm = document.getElementById('settings-height-row-cm');
@@ -1262,6 +1282,7 @@ function handleSaveSettings() {
   const goal = document.getElementById('settings-goal').value;
   const apiKey = document.getElementById('settings-api-key').value.trim();
   const units = document.getElementById('settings-units').value;
+  const avatar = document.getElementById('settings-avatar-val').value || '🥑';
 
   let weightKg = 0;
   let heightCm = 0;
@@ -1300,7 +1321,7 @@ function handleSaveSettings() {
     name, age, units,
     weight: weightKg, height: heightCm,
     rawWeight, rawHeightFt, rawHeightIn, rawHeightCm,
-    activity, goal, apiKey 
+    activity, goal, apiKey, avatar
   };
 
   const { targetCalories, targetProtein } = calculateNutrientTargets(updatedProfile);
@@ -1542,6 +1563,30 @@ document.addEventListener('DOMContentLoaded', () => {
   if (resetBtn) {
     resetBtn.textContent = 'Reset Profile & Start Over (Cancel)';
     resetBtn.addEventListener('click', handleResetApp);
+  }
+
+  // Onboarding avatar picker click handler
+  const onboardAvatarInput = document.getElementById('input-avatar-val');
+  if (onboardAvatarInput) {
+    document.querySelectorAll('#onboard-avatar-picker .btn-avatar').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#onboard-avatar-picker .btn-avatar').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        onboardAvatarInput.value = btn.getAttribute('data-avatar');
+      });
+    });
+  }
+
+  // Settings avatar picker click handler
+  const settingsAvatarInput = document.getElementById('settings-avatar-val');
+  if (settingsAvatarInput) {
+    document.querySelectorAll('#settings-avatar-picker .btn-avatar').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#settings-avatar-picker .btn-avatar').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        settingsAvatarInput.value = btn.getAttribute('data-avatar');
+      });
+    });
   }
 
   // Welcome tips close button listener

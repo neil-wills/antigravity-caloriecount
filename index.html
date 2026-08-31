@@ -43,8 +43,21 @@
           <h2 class="step-title">Tell us about yourself</h2>
           
           <div class="input-group">
-            <label for="input-display-name">App Title / Your Name</label>
-            <input type="text" id="input-display-name" value="Elizabeth" placeholder="e.g. Elizabeth" required>
+            <label for="input-display-name">Nickname</label>
+            <input type="text" id="input-display-name" value="Elizabeth" placeholder="e.g. Lizzy" required>
+          </div>
+
+          <div class="input-group">
+            <label>Choose your Avatar</label>
+            <div class="avatar-picker-grid" id="onboard-avatar-picker">
+              <button type="button" class="btn-avatar active" data-avatar="🥑">🥑</button>
+              <button type="button" class="btn-avatar" data-avatar="🧘‍♀️">🧘‍♀️</button>
+              <button type="button" class="btn-avatar" data-avatar="🏃‍♀️">🏃‍♀️</button>
+              <button type="button" class="btn-avatar" data-avatar="👩‍🍳">👩‍🍳</button>
+              <button type="button" class="btn-avatar" data-avatar="🏃‍♂️">🏃‍♂️</button>
+              <button type="button" class="btn-avatar" data-avatar="👨‍🍳">👨‍🍳</button>
+            </div>
+            <input type="hidden" id="input-avatar-val" value="🥑">
           </div>
 
           <div class="input-row">
@@ -151,8 +164,8 @@
   <div id="screen-main" class="app-screen">
     <!-- Header -->
     <header class="app-header">
-      <div class="header-logo">
-        <img src="icon.svg" alt="Logo" class="app-header-logo">
+      <div class="header-logo" style="display: flex; align-items: center; gap: 8px;">
+        <div id="header-avatar-circle" style="width: 32px; height: 32px; border-radius: 50%; background-color: rgba(13, 148, 136, 0.15); display: flex; align-items: center; justify-content: center; font-size: 1.35rem; border: 1.5px solid var(--accent-teal); box-shadow: var(--shadow-sm);">🥑</div>
         <h1 id="app-title-display">Lizzy's Plate</h1>
       </div>
       <div class="header-actions">
@@ -348,10 +361,26 @@
             
             <div class="settings-item">
               <div class="settings-label">
-                <strong>App Display Name</strong>
-                <span>Set custom heading</span>
+                <strong>Nickname</strong>
+                <span>Sets your header title</span>
               </div>
-              <input type="text" id="settings-app-title" class="settings-input-small" value="Lizzy's Plate">
+              <input type="text" id="settings-app-title" class="settings-input-small" value="Lizzy">
+            </div>
+
+            <div class="settings-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+              <div class="settings-label" style="width: 100%; display: flex; justify-content: space-between;">
+                <strong>Avatar</strong>
+                <span>Choose your look</span>
+              </div>
+              <div class="avatar-picker-grid" id="settings-avatar-picker" style="width: 100%; margin-top: 4px;">
+                <button type="button" class="btn-avatar" data-avatar="🥑">🥑</button>
+                <button type="button" class="btn-avatar" data-avatar="🧘‍♀️">🧘‍♀️</button>
+                <button type="button" class="btn-avatar" data-avatar="🏃‍♀️">🏃‍♀️</button>
+                <button type="button" class="btn-avatar" data-avatar="👩‍🍳">👩‍🍳</button>
+                <button type="button" class="btn-avatar" data-avatar="🏃‍♂️">🏃‍♂️</button>
+                <button type="button" class="btn-avatar" data-avatar="👨‍🍳">👨‍🍳</button>
+              </div>
+              <input type="hidden" id="settings-avatar-val" value="🥑">
             </div>
 
             <div class="settings-item">

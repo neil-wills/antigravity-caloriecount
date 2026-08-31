@@ -1632,3 +1632,41 @@ input:focus, select:focus {
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+
+/* Avatar Picker Layout and Button Styles */
+.avatar-picker-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 12px;
+}
+
+.btn-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  background-color: var(--bg-card);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), background-color var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-avatar:hover {
+  transform: scale(1.1);
+  background-color: var(--bg-card-hover);
+}
+
+.btn-avatar.active {
+  border-color: var(--accent-teal);
+  background-color: rgba(13, 148, 136, 0.15);
+  transform: scale(1.12);
+  box-shadow: var(--shadow-glow);
+}
