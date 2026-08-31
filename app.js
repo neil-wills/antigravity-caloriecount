@@ -121,6 +121,36 @@ function detectCurrentMealType() {
   }
 }
 
+// Scan Quota Limits Management (Limits family users from exhausting shared Gemini API key)
+const MAX_DAILY_SCANS = 20;
+
+function getDailyScanCount() {
+  const todayStr = getTodayDateString();
+  const savedDate = localStorage.getItem('auracal_scan_date');
+  const savedCount = localStorage.getItem('auracal_scan_count');
+
+  if (savedDate !== todayStr) {
+    localStorage.setItem('auracal_scan_date', todayStr);
+    localStorage.setItem('auracal_scan_count', '0');
+    return 0;
+  }
+  return parseInt(savedCount || '0', 10);
+}
+
+function incrementDailyScanCounter() {
+  const current = getDailyScanCount();
+  localStorage.setItem('auracal_scan_count', String(current + 1));
+  updateSettingsScanUsage();
+}
+
+function updateSettingsScanUsage() {
+  const usageText = document.getElementById('api-usage-status');
+  if (usageText) {
+    const current = getDailyScanCount();
+    usageText.textContent = `Daily AI Usage: ${current} / ${MAX_DAILY_SCANS} scans completed today`;
+  }
+}
+
 // Recalculate Mifflin-St Jeor Targets
 // Men: BMR = 10 * weight (kg) + 6.25 * height (cm) - 5 * age (y) + 5
 // Women: BMR = 10 * weight (kg) + 6.25 * height (cm) - 5 * age (y) - 161
@@ -864,6 +894,14 @@ function handleSaveMeal() {
 let scannerMode = 'food'; // 'food' or 'scale'
 
 function openScanner(mode) {
+  // If the user has a real API Key saved, enforce the daily quota check!
+  // (In mock demonstration mode, we let them use templates indefinitely without limits)
+  const isMock = !state.profile || !state.profile.apiKey;
+  if (!isMock && getDailyScanCount() >= MAX_DAILY_SCANS) {
+    alert(`Daily AI Scan Limit Reached!\n\nTo protect shared developer API quota, scanning is capped at ${MAX_DAILY_SCANS} scans per day.\n\nYou can still enter your meals manually! 🥑`);
+    return;
+  }
+
   scannerMode = mode;
   const title = document.getElementById('scanner-modal-title');
   title.textContent = mode === 'scale' ? 'Scan Scale + Food' : 'Scan Food Only';
@@ -980,6 +1018,7 @@ async function callGeminiVisionAPI(base64Data, mimeType, apiKey) {
     const textResult = data.candidates[0].content.parts[0].text;
     const parsedData = JSON.parse(textResult);
     
+    incrementDailyScanCounter();
     displayScanResults(parsedData);
   } catch (error) {
     console.error('Vision API processing failed:', error);
@@ -1351,6 +1390,7 @@ function loadSettingsInputs() {
   }
 
   updateApiKeyStatus(prof.apiKey);
+  updateSettingsScanUsage();
 }
 
 function handleSaveSettings() {
