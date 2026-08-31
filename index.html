@@ -638,17 +638,21 @@
             <!-- Scan Scale & Food button -->
             <button type="button" class="btn-action-card" id="btn-action-scan-scale">
               <span class="card-icon font-awesome-custom">⚖️📸</span>
-              <strong>Scan Scale + Food</strong>
+              <strong style="display: flex; align-items: center; justify-content: center; gap: 4px;">Scan Scale + Food <span style="font-size: 0.65rem; background: var(--accent-teal); color: #fff; padding: 1px 4px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">AI</span></strong>
               <span>Detect weight & identify food</span>
             </button>
             
             <!-- Scan Food Only button -->
             <button type="button" class="btn-action-card" id="btn-action-scan-food">
               <span class="card-icon font-awesome-custom">🍎📸</span>
-              <strong>Scan Food Only</strong>
+              <strong style="display: flex; align-items: center; justify-content: center; gap: 4px;">Scan Food Only <span style="font-size: 0.65rem; background: var(--accent-teal); color: #fff; padding: 1px 4px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">AI</span></strong>
               <span>Estimate calories from picture</span>
             </button>
           </div>
+
+          <p style="font-size: 0.76rem; color: var(--text-muted); text-align: center; margin-top: 10px; margin-bottom: 0; font-weight: 500; line-height: 1.35;">
+            🤖 <em>Note: Scanning features utilize Google Gemini AI models to analyze images, estimate sizes, and read scale screens.</em>
+          </p>
 
           <!-- Divider -->
           <div class="or-separator"><span>OR ENTER MANUALLY</span></div>
@@ -708,7 +712,7 @@
               Take or Upload Photo
               <input type="file" id="camera-file-input" accept="image/*" capture="environment" class="hidden">
             </label>
-            <span class="upload-subtext">Images are processed on-device and never stored.</span>
+            <span class="upload-subtext">Images are analyzed securely by Google Gemini AI and are never stored.</span>
           </div>
 
           <!-- Simple mock templates selector to ease demonstration without active camera -->
