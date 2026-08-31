@@ -745,14 +745,18 @@ button, select, input {
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.28); /* Soft overlay to keep food background visible */
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   z-index: 100;
   display: flex;
   align-items: flex-end; /* Mobile drawer sheets sliding from bottom */
   justify-content: center;
   animation: fadeIn 0.25s ease-out;
+}
+
+[data-theme="dark"] .modal-backdrop {
+  background-color: rgba(11, 15, 25, 0.45);
 }
 
 @media (min-width: 600px) {
@@ -764,15 +768,21 @@ button, select, input {
 .modal-card {
   width: 100%;
   max-width: 600px;
-  background-color: var(--bg-card);
+  background-color: rgba(255, 255, 255, 0.78); /* Semi-transparent white card */
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   border-top-left-radius: var(--border-radius-lg);
   border-top-right-radius: var(--border-radius-lg);
-  box-shadow: 0 -10px 25px rgba(0,0,0,0.15);
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.12);
   max-height: 92vh;
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .modal-card {
+  background-color: rgba(21, 31, 50, 0.82); /* Semi-transparent dark card */
 }
 
 @media (min-width: 600px) {
