@@ -99,7 +99,7 @@ function saveState() {
   }
 }
 
-// Auto-detect meal type based on local time and user ranges
+// Auto-detect meal type based on local time of day and user ranges
 function detectCurrentMealType() {
   const d = new Date();
   const currentHour = d.getHours();
@@ -107,19 +107,27 @@ function detectCurrentMealType() {
   
   // Format current local time as HH:MM (matches 24h clock input syntax)
   const currentHM = `${String(currentHour).padStart(2, '0')}:${String(currentMin).padStart(2, '0')}`;
-  
   const ranges = (state.profile && state.profile.mealRanges) ? state.profile.mealRanges : DEFAULT_MEAL_RANGES;
 
   function timeInWindow(timeStr, startStr, endStr) {
-    // String comparisons of HH:MM work perfectly for zero-padded values
     return timeStr >= startStr && timeStr <= endStr;
   }
 
+  // Exact user range window checks
   if (timeInWindow(currentHM, ranges.breakfastStart, ranges.breakfastEnd)) {
     return 'breakfast';
   } else if (timeInWindow(currentHM, ranges.lunchStart, ranges.lunchEnd)) {
     return 'lunch';
   } else if (timeInWindow(currentHM, ranges.dinnerStart, ranges.dinnerEnd)) {
+    return 'dinner';
+  }
+
+  // Smart time-of-day meal suggestion outside strict configured intervals:
+  if (currentHour >= 4 && currentHour < 11) {
+    return 'breakfast';
+  } else if (currentHour >= 11 && currentHour < 16) {
+    return 'lunch';
+  } else if (currentHour >= 16 && currentHour < 23) {
     return 'dinner';
   } else {
     return 'snacks';
@@ -129,12 +137,12 @@ function detectCurrentMealType() {
 // Utility to get graphic icon representation of a meal period
 function getMealPeriodIcon(mealType) {
   const icons = {
-    breakfast: '🌅',
-    lunch: '☀️',
-    dinner: '🌙',
+    breakfast: '🍳',
+    lunch: '🥗',
+    dinner: '🍽️',
     snacks: '🍎'
   };
-  return icons[mealType.toLowerCase()] || '🍽️';
+  return icons[(mealType || '').toLowerCase()] || '🍽️';
 }
 
 // Scan Quota Limits Management (Limits family users from exhausting shared Gemini API key)
@@ -684,10 +692,17 @@ function renderDashboard() {
     btnViewActivities.textContent = `View (${workouts.length})`;
   }
 
-  // 6. Update Period Header text
+  // 6. Update Period Header text and mark currently active time-of-day meal
   const isToday = (dateKey === getTodayDateString());
   document.getElementById('dashboard-meal-period').textContent = isToday ? 'Today' : dateKey;
-}
+  
+  if (isToday) {
+    const suggestedMeal = detectCurrentMealType();
+    document.querySelectorAll('.btn-shortcut[data-meal]').forEach(btn => {
+      const meal = btn.getAttribute('data-meal');
+      btn.classList.toggle('suggested-now', meal === suggestedMeal);
+    });
+  }
 
 function renderWaterGlasses() {
   const dateKey = state.currentDate;
@@ -1164,20 +1179,28 @@ function deleteFoodItem(mealType, index) {
 // --------------------------------------------------------------------------
 // 8. Modals: Meal Composer Logic
 // --------------------------------------------------------------------------
-function openComposer(mealType) {
+function setComposerMealPeriod(mealType) {
   state.composerMealType = mealType;
+  const typeCapitalized = mealType.charAt(0).toUpperCase() + mealType.slice(1);
+  const typeEl = document.getElementById('composer-meal-type');
+  if (typeEl) typeEl.textContent = typeCapitalized;
+  
+  const iconEl = document.getElementById('composer-meal-icon');
+  if (iconEl) iconEl.textContent = getMealPeriodIcon(mealType);
+  
+  const selectEl = document.getElementById('composer-meal-select');
+  if (selectEl) selectEl.value = mealType;
+  
+  // Update period switcher pills
+  document.querySelectorAll('.btn-period-pill').forEach(pill => {
+    pill.classList.toggle('active', pill.getAttribute('data-period') === mealType);
+  });
+}
+
+function openComposer(mealType) {
+  const selectedMeal = mealType || detectCurrentMealType();
+  setComposerMealPeriod(selectedMeal);
   state.composerItems = [];
-  
-  document.getElementById('composer-meal-type').textContent = mealType.charAt(0).toUpperCase() + mealType.slice(1);
-  const composerIcon = document.getElementById('composer-meal-icon');
-  if (composerIcon) {
-    composerIcon.textContent = getMealPeriodIcon(mealType);
-  }
-  
-  const mealSelect = document.getElementById('composer-meal-select');
-  if (mealSelect) {
-    mealSelect.value = mealType;
-  }
   
   // Clear Manual form inputs
   document.getElementById('manual-food-name').value = '';
@@ -2638,15 +2661,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const composerMealSelect = document.getElementById('composer-meal-select');
   if (composerMealSelect) {
     composerMealSelect.addEventListener('change', (e) => {
-      const selectedMeal = e.target.value;
-      state.composerMealType = selectedMeal;
-      document.getElementById('composer-meal-type').textContent = selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1);
-      const composerIcon = document.getElementById('composer-meal-icon');
-      if (composerIcon) {
-        composerIcon.textContent = getMealPeriodIcon(selectedMeal);
-      }
+      setComposerMealPeriod(e.target.value);
     });
   }
+
+  // Composer Modal Period Switcher Pills (one-tap missed meal backlogging)
+  document.querySelectorAll('.btn-period-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      const period = pill.getAttribute('data-period');
+      setComposerMealPeriod(period);
+    });
+  });
 
   // Composer Modal actions
   document.getElementById('btn-close-composer').addEventListener('click', closeComposer);

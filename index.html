@@ -758,13 +758,25 @@
       </div>
 
       <div class="modal-body">
-        <!-- Meal Period Category Selector -->
+        <!-- Meal Period Category Selector with Missed Meal Notice -->
         <div class="input-group" style="margin-bottom: 15px;">
-          <label for="composer-meal-select" style="font-weight: 700; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px; display: block;">Meal Category</label>
-          <select id="composer-meal-select" style="width: 100%; border: 1px solid var(--border-color); background-color: var(--bg-card); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.95rem; font-weight: 600; color: var(--text-primary); cursor: pointer;">
-            <option value="breakfast">🌅 Breakfast</option>
-            <option value="lunch">☀️ Lunch</option>
-            <option value="dinner">🌙 Dinner</option>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <label for="composer-meal-select" style="font-weight: 700; font-size: 0.82rem; color: var(--text-secondary); margin: 0;">Meal Period</label>
+            <span style="font-size: 0.72rem; color: var(--accent-teal); font-weight: 600;">Tap any to backlog a missed meal</span>
+          </div>
+          
+          <!-- Fast Pill Selector for One-Tap Meal Switching -->
+          <div class="composer-period-pills" id="composer-period-pills" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 8px;">
+            <button type="button" class="btn-period-pill active" data-period="breakfast">🍳 Breakfast</button>
+            <button type="button" class="btn-period-pill" data-period="lunch">🥗 Lunch</button>
+            <button type="button" class="btn-period-pill" data-period="dinner">🍽️ Dinner</button>
+            <button type="button" class="btn-period-pill" data-period="snacks">🍎 Snacks</button>
+          </div>
+
+          <select id="composer-meal-select" style="width: 100%; border: 1px solid var(--border-color); background-color: var(--bg-card); padding: 8px 12px; border-radius: var(--border-radius-sm); font-size: 0.92rem; font-weight: 600; color: var(--text-primary); cursor: pointer;">
+            <option value="breakfast">🍳 Breakfast</option>
+            <option value="lunch">🥗 Lunch</option>
+            <option value="dinner">🍽️ Dinner</option>
             <option value="snacks">🍎 Snacks</option>
           </select>
         </div>

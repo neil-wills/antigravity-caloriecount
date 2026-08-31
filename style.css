@@ -600,6 +600,44 @@ button, select, input {
   transform: scale(0.97);
 }
 
+/* Composer Period Switcher Pills (for one-tap missed meal switching) */
+.btn-period-pill {
+  padding: 8px 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  border-radius: var(--border-radius-sm);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.btn-period-pill:hover {
+  border-color: var(--accent-teal);
+  color: var(--text-primary);
+}
+
+.btn-period-pill.active {
+  background: rgba(13, 148, 136, 0.14);
+  border-color: var(--accent-teal);
+  color: var(--accent-teal);
+  box-shadow: 0 0 0 1px var(--accent-teal);
+}
+
+.suggested-meal-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--accent-teal);
+  color: white;
+  margin-left: 4px;
+  text-transform: uppercase;
+}
+
 #meal-group-breakfast .meal-emoji { color: #f59e0b; }
 #meal-group-lunch .meal-emoji { color: #10b981; }
 #meal-group-dinner .meal-emoji { color: #8b5cf6; }
