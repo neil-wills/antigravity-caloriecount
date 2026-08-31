@@ -437,6 +437,12 @@ function initOnboarding() {
   });
 }
 
+function getUserNickname() {
+  if (!state.profile) return 'Elizabeth';
+  const nick = state.profile.nickname || state.profile.name || 'Elizabeth';
+  return nick.trim();
+}
+
 function updateDisplayTitle() {
   const displayTitle = document.getElementById('app-title-display');
   const avatarCircle = document.getElementById('header-avatar-circle');
@@ -446,12 +452,12 @@ function updateDisplayTitle() {
   const settingsName = document.getElementById('settings-name-display');
 
   if (state.profile) {
-    const name = state.profile.name || 'Elizabeth';
+    const nick = getUserNickname();
     const avatar = state.profile.avatar || '🥑';
 
     if (displayTitle) {
-      displayTitle.textContent = `${name}'s Plate`;
-      document.title = `${name}'s Plate - Calorie Tracker`;
+      displayTitle.textContent = `${nick}'s Plate`;
+      document.title = `${nick}'s Plate - Calorie Tracker`;
     }
     if (avatarCircle) {
       avatarCircle.textContent = avatar;
@@ -460,13 +466,13 @@ function updateDisplayTitle() {
       welcomeAvatar.textContent = avatar;
     }
     if (welcomeUsername) {
-      welcomeUsername.textContent = name;
+      welcomeUsername.textContent = nick;
     }
     if (settingsAvatar) {
       settingsAvatar.textContent = avatar;
     }
     if (settingsName) {
-      settingsName.textContent = name;
+      settingsName.textContent = nick;
     }
   }
 }
@@ -599,42 +605,43 @@ function renderDashboard() {
       : `Base Goal: ${targetCals} kcal`;
   }
 
-  // Dynamic Encouragement Level & Tailored Messaging
+  // Dynamic Encouragement Level & Tailored Messaging using Nickname
+  const userNick = getUserNickname();
   let burnLevel = '🌱 Rest & Fuel';
-  let encTitle = 'Great Pacing Today!';
+  let encTitle = `Great Pacing Today, ${userNick}!`;
   let encEmoji = '✨';
-  let encMsg = 'You are balancing your meals smoothly. Stay consistent and keep hydrated!';
+  let encMsg = `You are balancing your meals smoothly, ${userNick}. Stay consistent and keep hydrated!`;
 
   if (totalKcalBurned >= 400) {
     burnLevel = `⚡ Champion Burner (+${totalKcalBurned} kcal)`;
     encEmoji = '⚡';
-    encTitle = 'High-Power Workout Day!';
-    encMsg = `Incredible workout! You've expanded your daily energy budget by +${totalKcalBurned} kcal. Refuel with quality protein and wholesome carbs.`;
+    encTitle = `Champion Workout Day, ${userNick}!`;
+    encMsg = `Incredible workout, ${userNick}! You've expanded your daily energy budget by +${totalKcalBurned} kcal. Refuel with quality protein and wholesome carbs.`;
   } else if (totalKcalBurned >= 150) {
     burnLevel = `🔥 Active Burner (+${totalKcalBurned} kcal)`;
     encEmoji = '🔥';
-    encTitle = 'Awesome Calorie Burn!';
-    encMsg = `Your active workout created a +${totalKcalBurned} kcal energy cushion, giving you ${Math.max(0, netRemaining)} kcal of flexible fuel remaining.`;
+    encTitle = `Awesome Calorie Burn, ${userNick}!`;
+    encMsg = `Your active workout created a +${totalKcalBurned} kcal energy cushion, giving you ${Math.max(0, netRemaining)} kcal of flexible fuel remaining, ${userNick}.`;
   } else if (eatenCalories === 0) {
     burnLevel = '🌅 Fresh Start';
     encEmoji = '🥑';
-    encTitle = 'Ready to Fuel Your Goals!';
-    encMsg = `Your base energy target is ${targetCals} kcal. Snap a photo of your breakfast or log a quick walk to start the day strong.`;
+    encTitle = `Ready to Fuel Your Goals, ${userNick}!`;
+    encMsg = `Your base energy target is ${targetCals} kcal. Snap a photo of your breakfast or log a quick walk to start the day strong, ${userNick}.`;
   } else if (netRemaining >= 200) {
     burnLevel = '🎯 On-Track Deficit';
     encEmoji = '🌟';
-    encTitle = 'Deficit Momentum is Strong!';
-    encMsg = `You've logged ${eatenCalories} kcal with ${netRemaining} kcal left in your target budget. Great portion discipline!`;
+    encTitle = `Deficit Momentum is Strong, ${userNick}!`;
+    encMsg = `You've logged ${eatenCalories} kcal with ${netRemaining} kcal left in your target budget, ${userNick}. Great portion discipline!`;
   } else if (netRemaining >= -50) {
     burnLevel = '🎯 Target Bullseye';
     encEmoji = '🎯';
-    encTitle = 'Spot-on Energy Balance!';
-    encMsg = `You're within ${Math.abs(netRemaining)} kcal of your goal. Perfect nutritional pacing for the day!`;
+    encTitle = `Spot-on Energy Balance, ${userNick}!`;
+    encMsg = `You're within ${Math.abs(netRemaining)} kcal of your goal, ${userNick}. Perfect nutritional pacing for the day!`;
   } else {
     burnLevel = '💪 Refuel & Recharge';
     encEmoji = '💪';
-    encTitle = 'Active Refueling Day';
-    encMsg = `You're ${Math.abs(netRemaining)} kcal over your baseline. A short brisk walk or balanced lighter meal tomorrow keeps you in complete control.`;
+    encTitle = `Active Refueling Day, ${userNick}`;
+    encMsg = `You're ${Math.abs(netRemaining)} kcal over your baseline, ${userNick}. A short brisk walk or balanced lighter meal tomorrow keeps you in complete control.`;
   }
 
   const burnLevelEl = document.getElementById('display-burn-level');
@@ -2846,7 +2853,7 @@ function updateAvoSpeech() {
   const bubble = document.getElementById('avo-speech-bubble');
   if (!bubble || !state.profile) return;
 
-  const nickname = state.profile.name || 'Elizabeth';
+  const nickname = getUserNickname();
   const dateKey = state.currentDate;
   const todayMeals = state.meals[dateKey] || { breakfast: [], lunch: [], dinner: [], snacks: [] };
   
@@ -2862,7 +2869,7 @@ function updateAvoSpeech() {
   // 2. Hydration Check
   const waterCount = state.water[dateKey] || 0;
   if (waterCount === 0) {
-    bubble.textContent = `"Avo-Buddy reminder: 💧 Staying hydrated helps filter protein efficiently. Tap a water glass below to record hydration!"`;
+    bubble.textContent = `"Hey ${nickname}! 💧 Staying hydrated helps your body absorb nutrients and metabolize energy. Tap a water glass below to record hydration!"`;
     return;
   }
 
@@ -2880,29 +2887,32 @@ function updateAvoSpeech() {
   const remaining = targetCals - eatenCalories;
 
   if (eatenCalories === 0) {
-    bubble.textContent = `"Hi ${nickname}! 🥑 Ready to log your plate? Let's track your delicious food entries together today!"`;
+    bubble.textContent = `"Hi ${nickname}! 🥑 Ready to fuel your day? Let's capture some delicious calorie entries together!"`;
   } else if (remaining > 500) {
     bubble.textContent = `"Doing great, ${nickname}! You have eaten ${eatenCalories} kcal and have ${remaining} kcal remaining to reach your target."`;
   } else if (remaining > 0 && remaining <= 500) {
     bubble.textContent = `"So close, ${nickname}! 🌟 Only ${remaining} kcal left for today. You are doing a spectacular job!"`;
   } else if (remaining === 0) {
-    bubble.textContent = `"Bingo! 🎯 You hit your calorie target perfectly today. Avo-Buddy is super proud!"`;
+    bubble.textContent = `"Bingo, ${nickname}! 🎯 You hit your calorie target perfectly today. Avo-Buddy is super proud!"`;
   } else {
-    bubble.textContent = `"Fully fueled, ${nickname}! 💪 You logged ${eatenCalories} kcal (${Math.abs(remaining)} kcal over target). Excellent job logging!"`;
+    bubble.textContent = `"Fully fueled, ${nickname}! 💪 You logged ${eatenCalories} kcal (${Math.abs(remaining)} kcal over target). Excellent job tracking!"`;
   }
 }
 
-const AVO_TIPS = [
-  "Did you know? Avocados are rich in monounsaturated fats that sustain energy and keep cravings away! 🥑",
-  "Consistency is the secret ingredient! Log everything—even tiny snacks count. ✨",
-  "You're doing fantastic! Avo-Buddy is cheering for your healthy targets today! 🎉",
-  "Scanning a scale? Ensure the camera frames the digital display directly for Gemini AI reading! 📸",
-  "Protein preserves joint strength and maintains lean muscle tissue over time! 🌟",
-  "Take a snapshot of your plate, and my Gemini Vision scanner will estimate portion weight and calories! 📸",
-  "Avo-Buddy Tip: Adding protein-rich seeds or nuts to your toast keeps your energy stable all day! 🥜",
-  "Want a clean slate? Tap 'Reset Profile & Start Over' in Settings anytime! ⚙️",
-  "Hydration raises your metabolic rate! Drink a glass of water right now and tap a cup below! 💧"
-];
+function getAvoTips() {
+  const nickname = getUserNickname();
+  return [
+    `Did you know, ${nickname}? Avocados are rich in monounsaturated fats that sustain energy and keep cravings away! 🥑`,
+    `Consistency is your secret ingredient, ${nickname}! Log everything—even tiny snacks count. ✨`,
+    `You're doing fantastic, ${nickname}! Avo-Buddy is cheering for your healthy targets today! 🎉`,
+    `Scanning a scale, ${nickname}? Ensure the camera frames the digital display directly for Gemini AI reading! 📸`,
+    `Protein preserves joint strength and maintains lean muscle tissue over time, ${nickname}! 🌟`,
+    `Take a snapshot of your plate, ${nickname}, and my Gemini Vision scanner will estimate portion weight and calories! 📸`,
+    `Avo-Buddy Tip for ${nickname}: Adding protein-rich seeds or nuts to your toast keeps your energy stable all day! 🥜`,
+    `Want a clean slate? Tap 'Reset Profile & Start Over' in Settings anytime, ${nickname}! ⚙️`,
+    `Hydration raises your metabolic rate, ${nickname}! Drink a glass of water right now and tap a cup below! 💧`
+  ];
+}
 
 function initAvoBuddy() {
   const avoBtn = document.getElementById('btn-tap-avo');
@@ -2910,20 +2920,15 @@ function initAvoBuddy() {
   if (!avoBtn || !bubble) return;
 
   avoBtn.addEventListener('click', () => {
+    const tips = getAvoTips();
     const currentText = bubble.textContent;
     let newTip = currentText;
     
     // Ensure we pick a new tip
     while (newTip === currentText) {
-      const idx = Math.floor(Math.random() * AVO_TIPS.length);
-      newTip = `"${AVO_TIPS[idx]}"`;
+      const idx = Math.floor(Math.random() * tips.length);
+      newTip = `"${tips[idx]}"`;
     }
-    
     bubble.textContent = newTip;
-    
-    // Quick visual bounce reaction
-    avoBtn.style.animation = 'none';
-    avoBtn.offsetHeight; // trigger layout reflow
-    avoBtn.style.animation = 'floatCharacter 3s ease-in-out infinite';
   });
 }
