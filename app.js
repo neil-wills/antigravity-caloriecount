@@ -703,6 +703,7 @@ function renderDashboard() {
       btn.classList.toggle('suggested-now', meal === suggestedMeal);
     });
   }
+}
 
 function renderWaterGlasses() {
   const dateKey = state.currentDate;
@@ -2603,10 +2604,21 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Register Shortcuts click listeners on Dashboard for Meals
+  ['breakfast', 'lunch', 'dinner', 'snacks'].forEach(meal => {
+    const btn = document.getElementById(`btn-quick-${meal}`) || document.querySelector(`.btn-shortcut[data-meal="${meal}"]`);
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openComposer(meal);
+      });
+    }
+  });
+
   document.querySelectorAll('.btn-shortcut[data-meal]').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const meal = btn.getAttribute('data-meal');
-      openComposer(meal);
+      if (meal) openComposer(meal);
     });
   });
 
