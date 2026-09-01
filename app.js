@@ -1203,15 +1203,23 @@ function openComposer(mealType) {
   setComposerMealPeriod(selectedMeal);
   state.composerItems = [];
   
-  // Clear Manual form inputs
-  document.getElementById('manual-food-name').value = '';
-  document.getElementById('manual-food-weight').value = '';
-  document.getElementById('manual-food-density').value = '150';
-  document.getElementById('calc-preview-calories').textContent = '0';
-  document.getElementById('calc-preview-protein').textContent = '0.0';
+  // Clear Manual form inputs safely
+  const manualName = document.getElementById('manual-food-name');
+  if (manualName) manualName.value = '';
+  const manualWeight = document.getElementById('manual-food-weight');
+  if (manualWeight) manualWeight.value = '';
+  const manualDensity = document.getElementById('manual-food-density');
+  if (manualDensity) manualDensity.value = '150';
+  const previewCals = document.getElementById('calc-preview-calories');
+  if (previewCals) previewCals.textContent = '0';
+  const previewProt = document.getElementById('calc-preview-protein');
+  if (previewProt) previewProt.textContent = '0.0';
 
   renderComposerItems();
-  document.getElementById('modal-composer').classList.remove('hidden');
+  const modal = document.getElementById('modal-composer');
+  if (modal) {
+    modal.classList.remove('hidden');
+  }
 }
 
 function closeComposer() {

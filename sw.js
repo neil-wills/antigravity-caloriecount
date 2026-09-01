@@ -1,4 +1,4 @@
-const CACHE_NAME = 'lizzys-plate-v47';
+const CACHE_NAME = 'lizzys-plate-v48';
 const ASSETS = [
   './',
   './index.html',
@@ -35,33 +35,33 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch Event (Cache First, Network Fallback)
+// Fetch Event (Network First for fresh code, Cache Fallback for offline)
 self.addEventListener('fetch', (e) => {
-  // Avoid caching backend API requests, Google API requests, or exterior assets
+  // Pass-through external APIs
   if (e.request.url.includes('/api/') || e.request.url.includes('googleapis.com') || e.request.url.includes('google-analytics')) {
-    return fetch(e.request);
+    return;
   }
 
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(e.request).then((networkResponse) => {
-        // Cache new static assets dynamically if appropriate
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+    fetch(e.request)
+      .then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200 && e.request.method === 'GET') {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(e.request, responseToCache);
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // Fallback for document navigation if offline
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(e.request).then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          if (e.request.mode === 'navigate') {
+            return caches.match('./index.html');
+          }
+        });
+      })
   );
 });
